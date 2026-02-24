@@ -24,7 +24,13 @@ app = FastAPI(title="XHS Link", version="1.0.0", lifespan=lifespan)
 # ── CORS for GitHub Pages frontend ────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Production: replace with your GitHub Pages URL
+    allow_origins=[
+        "https://lxgtn.github.io",
+        "https://lxgtn.github.io/xhslink_260224",
+        "https://lxgtn.github.io/xhslink_260224/frontend",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
