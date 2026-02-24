@@ -10,7 +10,14 @@
       "Bash(py3 --version)",
       "Bash(/c/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe --version)",
       "Bash(PYTHON=/c/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe)",
-      "Bash($PYTHON -c \":*)"
+      "Bash($PYTHON -c \":*)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/sheets_service.py''\\).read\\(\\)\\); print\\(''sheets_service.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''app/services/sheets_service.py''\\).read\\(\\)\\); print\\(''sheets_service.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''app/services/sheets_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''sheets_service.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''app/services/workflow_service.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''workflow_service.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''app/api/auth.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''auth.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''app/api/config_api.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''config_api.py OK''\\)\")",
+      "Bash(C:/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe -c \"import ast; ast.parse\\(open\\(''config.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''config.py OK''\\)\")"
     ]
   }
 }

@@ -1,5 +1,44 @@
 # Development Log
 
+## v1.1.0 – 飞书多维表格迁移
+
+**记录时间**：2026-02-24
+**版本号**：v1.1.0
+**状态**：已迁移
+
+### 变更摘要
+
+- 从 Google Sheets 迁移到飞书多维表格（Feishu Sheets）
+- 移除 Google OAuth 2.0 授权流程，改用飞书 App ID + App Secret
+- 所有表格 API 调用改为异步（httpx），简化代码
+- 前端设置页面更新：Google 授权 → 飞书配置（App ID、App Secret、测试连接）
+
+### 文件变更
+
+| 文件 | 变更 |
+|------|------|
+| `app/services/sheets_service.py` | 完全重写，使用飞书 API |
+| `app/services/workflow_service.py` | 移除 `asyncio.to_thread()` 包装器 |
+| `app/api/auth.py` | 移除 Google OAuth，添加 `/api/auth/feishu/status` |
+| `app/api/config_api.py` | 添加 `feishu_app_id`、`feishu_app_secret` 字段 |
+| `config.py` | 移除 Google 相关常量 |
+| `requirements.txt` | 移除 `google-*` 依赖 |
+| `frontend/index.html` | 飞书配置表单 |
+| `frontend/js/settings.js` | 飞书连接测试 |
+
+### 飞书配置步骤
+
+1. 访问 [飞书开放平台](https://open.feishu.cn/app/)
+2. 创建「企业自建应用」
+3. 启用权限：
+   - `drive:drive:readonly`（读取多维表格）
+   - `sheets:spreadsheet:readonly`（读取工作表）
+   - `sheets:spreadsheet:write`（写入工作表）
+4. 发布应用（或添加测试用户）
+5. 在设置页面填写：App ID、App Secret、多维表格 ID
+
+---
+
 ## v1.0.0 – 初始构建
 
 **记录时间**：2026-02-24
@@ -46,7 +85,7 @@ xhslink_260224/
 |------|------|
 | 后端框架 | Python + FastAPI + uvicorn |
 | 浏览器爬取 | Playwright（chromium，headless + headful 两种模式） |
-| Google Sheets | google-auth-oauthlib OAuth2 + google-api-python-client |
+| 在线表格 | 飞书多维表格 API（App ID + App Secret） |
 | AI 调用 | openai SDK（OpenAI 兼容接口，支持所有主流厂商） |
 | 本地存储 | SQLite（aiosqlite 异步） |
 | 实时日志 | SSE（Server-Sent Events） |
@@ -70,7 +109,7 @@ python run.py
 
 1. **设置 → 小红书 Cookie**：点击「获取 Cookie」→ 在弹出浏览器中登录小红书
 2. **设置 → AI 模型**：填写模型厂商、名称（推荐 `gemini-2.0-flash`）和 API Key
-3. **设置 → Google Sheets**：将 `credentials.json` 放入 `data/`，填写 Sheets ID，点击「授权 Google 账号」
+3. **设置 → 飞书多维表格**：在飞书开放平台创建应用获取 App ID 和 App Secret，填写到设置页面
 
 配置完成后，在 Sheets A 列填写小红书链接，点击「▶ 开始运行」即可。
 
@@ -107,9 +146,7 @@ python run.py
 | GET  | /api/history/{run_id} | 单次运行详情 + 完整日志 |
 | GET  | /api/config | 读取配置（API Key 脱敏返回） |
 | POST | /api/config | 保存配置 |
-| GET  | /api/auth/google | 获取 Google OAuth 授权 URL |
-| GET  | /api/auth/google/callback | OAuth 回调，保存 token |
-| GET  | /api/auth/google/status | Google 授权状态 |
+| GET  | /api/auth/feishu/status | 飞书授权状态 |
 | GET  | /api/cookies/status | XHS Cookie 状态 |
 | POST | /api/cookies/capture | 打开浏览器让用户登录 XHS |
 | POST | /api/cookies/cancel | 取消 Cookie 捕获 |
@@ -121,7 +158,7 @@ python run.py
 ```sql
 -- 配置表（key-value）
 CREATE TABLE config (key TEXT PRIMARY KEY, value TEXT);
--- 存储 key：ai_provider, ai_model, ai_base_url, ai_api_key, sheets_id
+-- 存储 key：ai_provider, ai_model, ai_base_url, ai_api_key, sheets_id, feishu_app_id, feishu_app_secret
 
 -- 运行记录
 CREATE TABLE runs (
@@ -143,14 +180,14 @@ CREATE TABLE run_events (
 ```
 用户点击「开始运行」
   ↓
-F1  读取 Google Sheets，筛选 auto='' 且 error='' 的行
+F1  读取飞书多维表格，筛选 auto='' 且 error='' 的行
   ↓
 对每条链接（串行）：
   F4  Playwright 抓取笔记数据（携带 XHS Cookie）
   F5  AI 解析图片 → pic_processed
   F6  AI 解析视频 → video_processed
   F7  AI 生成总结 → summary
-  F8  实时回写 Google Sheets（空值占位为 "0"）
+  F8  实时回写飞书多维表格（空值占位为 "0"）
   F9  更新状态：成功 auto=1，失败 error=失败原因
   ↓
 网页端展示完成摘要，历史记录保存至 SQLite

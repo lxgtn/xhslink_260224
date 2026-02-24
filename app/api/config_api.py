@@ -14,6 +14,8 @@ class ConfigPayload(BaseModel):
     ai_base_url: Optional[str] = None
     ai_api_key: Optional[str] = None
     sheets_id: Optional[str] = None
+    feishu_app_id: Optional[str] = None
+    feishu_app_secret: Optional[str] = None
 
 
 def _mask_key(key: str) -> str:
@@ -28,9 +30,13 @@ def _mask_key(key: str) -> str:
 async def get_config():
     cfg = await db.get_all_config()
     raw_key = cfg.get("ai_api_key", "")
+    raw_secret = cfg.get("feishu_app_secret", "")
     cfg["ai_api_key"] = ""  # never send raw key
     cfg["ai_api_key_masked"] = _mask_key(raw_key)
     cfg["ai_api_key_set"] = bool(raw_key)
+    cfg["feishu_app_secret"] = ""  # never send raw secret
+    cfg["feishu_app_secret_masked"] = _mask_key(raw_secret)
+    cfg["feishu_app_secret_set"] = bool(raw_secret)
     return cfg
 
 

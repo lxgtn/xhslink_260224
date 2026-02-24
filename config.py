@@ -9,15 +9,11 @@ DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 DB_PATH = DATA_DIR / "xhslink.db"
-CREDENTIALS_PATH = DATA_DIR / "credentials.json"
-TOKEN_PATH = DATA_DIR / "token.json"
 XHS_COOKIES_PATH = DATA_DIR / "xhs_cookies.json"
 
 PORT = int(os.getenv("PORT", 8000))
 
-GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-
-# Google Sheets column order (A=1, 1-based index)
+# Feishu Sheets column order (A=1, 1-based index)
 SHEETS_COLUMNS = {
     "link": 1,
     "title": 2,

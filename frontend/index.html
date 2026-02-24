@@ -89,27 +89,38 @@
       </div>
     </div>
 
-    <!-- Google Sheets -->
+    <!-- 飞书多维表格 -->
     <div class="card">
-      <h2>Google Sheets</h2>
+      <h2>飞书多维表格</h2>
       <div class="form-group">
-        <label>Sheets ID</label>
+        <label>多维表格 ID <small>（URL 中间的字母数字串）</small></label>
         <input type="text" id="sheets-id"
-          placeholder="Google Sheets URL 中间的字母数字串" />
+          placeholder="例：Qwerty1234567890abcd" />
+      </div>
+      <div class="form-group">
+        <label>飞书 App ID</label>
+        <input type="text" id="feishu-app-id"
+          placeholder="cli_xxxxxxxxxxxxxxxx" />
+      </div>
+      <div class="form-group">
+        <label>飞书 App Secret</label>
+        <input type="password" id="feishu-app-secret"
+          placeholder="输入 App Secret…" autocomplete="off" />
+        <p id="feishu-secret-hint" class="hint" style="display:none"></p>
       </div>
       <div class="form-row">
         <div class="status-label">
-          <span class="status-dot idle" id="google-status-dot"></span>
-          <span id="google-status-text">检查中…</span>
+          <span class="status-dot idle" id="feishu-status-dot"></span>
+          <span id="feishu-status-text">检查中…</span>
         </div>
-        <button class="btn btn-secondary" id="google-auth-btn">授权 Google 账号</button>
+        <button class="btn btn-secondary" id="feishu-test-btn">测试连接</button>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="save-sheets-btn">保存 Sheets 配置</button>
+        <button class="btn btn-primary" id="save-feishu-btn">保存飞书配置</button>
       </div>
       <p class="hint">
-        需要先创建 Google Cloud OAuth 2.0 凭据并将 <code>credentials.json</code>
-        放入 <code>data/</code> 目录，然后点击「授权 Google 账号」完成授权。
+        需要在<a href="https://open.feishu.cn/app/" target="_blank">飞书开放平台</a>
+        创建企业自建应用，启用「多维表格」权限后获取 App ID 和 App Secret。
       </p>
     </div>
 

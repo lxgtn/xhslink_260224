@@ -1,5 +1,5 @@
 /**
- * settings.js – AI config form, Google OAuth, XHS Cookie capture.
+ * settings.js – AI config form, Feishu connection, XHS Cookie capture.
  */
 
 const Settings = {
@@ -8,21 +8,21 @@ const Settings = {
 
   async init() {
     await this._loadConfig();
-    await this.checkGoogleStatus();
+    await this._checkFeishuStatus();
     await this._checkCookieStatus();
     this._bindEvents();
   },
 
   async refresh() {
     await this._loadConfig();
-    await this.checkGoogleStatus();
+    await this._checkFeishuStatus();
     await this._checkCookieStatus();
   },
 
   _bindEvents() {
     document.getElementById('save-ai-btn').addEventListener('click', () => this._saveAI());
-    document.getElementById('save-sheets-btn').addEventListener('click', () => this._saveSheets());
-    document.getElementById('google-auth-btn').addEventListener('click', () => this._startGoogleAuth());
+    document.getElementById('save-feishu-btn').addEventListener('click', () => this._saveFeishu());
+    document.getElementById('feishu-test-btn').addEventListener('click', () => this._testFeishu());
     document.getElementById('capture-cookie-btn').addEventListener('click', () => this._captureCookie());
     document.getElementById('cancel-cookie-btn').addEventListener('click', () => this._cancelCapture());
   },
@@ -46,6 +46,16 @@ const Settings = {
       }
 
       document.getElementById('sheets-id').value = cfg.sheets_id || '';
+      document.getElementById('feishu-app-id').value = cfg.feishu_app_id || '';
+      document.getElementById('feishu-app-secret').value = '';  // never pre-fill
+
+      const secretHint = document.getElementById('feishu-secret-hint');
+      if (cfg.feishu_app_secret_set) {
+        secretHint.style.display = 'block';
+        secretHint.textContent   = `已保存的 App Secret：${cfg.feishu_app_secret_masked}`;
+      } else {
+        secretHint.style.display = 'none';
+      }
     } catch (_) {}
   },
 
@@ -67,51 +77,72 @@ const Settings = {
     await this._loadConfig();  // refresh masked key display
   },
 
-  async _saveSheets() {
-    const payload = { sheets_id: document.getElementById('sheets-id').value.trim() };
+  async _saveFeishu() {
+    const payload = {
+      sheets_id: document.getElementById('sheets-id').value.trim(),
+      feishu_app_id: document.getElementById('feishu-app-id').value.trim(),
+    };
+    const secret = document.getElementById('feishu-app-secret').value.trim();
+    if (secret) payload.feishu_app_secret = secret;
+
     await fetch('/api/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    App.toast('Sheets 配置已保存', 'success');
+    App.toast('飞书配置已保存', 'success');
+    await this._loadConfig();
+    await this._checkFeishuStatus();
   },
 
-  // ── Google OAuth ───────────────────────────────────────────────
+  // ── Feishu Connection ──────────────────────────────────────────
 
-  async checkGoogleStatus() {
+  async _checkFeishuStatus() {
     try {
-      const status = await fetch('/api/auth/google/status').then(r => r.json());
-      const dot  = document.getElementById('google-status-dot');
-      const text = document.getElementById('google-status-text');
-      const btn  = document.getElementById('google-auth-btn');
+      const status = await fetch('/api/auth/feishu/status').then(r => r.json());
+      const dot  = document.getElementById('feishu-status-dot');
+      const text = document.getElementById('feishu-status-text');
 
       if (status.status === 'authorized') {
         dot.className  = 'status-dot success';
-        text.textContent = '已授权';
-        btn.textContent  = '重新授权';
+        text.textContent = '连接正常';
       } else if (status.status === 'no_credentials') {
         dot.className  = 'status-dot error';
-        text.textContent = status.message;
-        btn.disabled   = true;
+        text.textContent = '未配置';
       } else {
-        dot.className  = 'status-dot idle';
-        text.textContent = '未授权';
-        btn.disabled   = false;
+        dot.className  = 'status-dot error';
+        text.textContent = '连接失败';
       }
-    } catch (_) {}
+    } catch (_) {
+      const dot = document.getElementById('feishu-status-dot');
+      const text = document.getElementById('feishu-status-text');
+      dot.className = 'status-dot error';
+      text.textContent = '检查失败';
+    }
   },
 
-  async _startGoogleAuth() {
+  async _testFeishu() {
+    const btn = document.getElementById('feishu-test-btn');
+    btn.disabled = true;
+    btn.textContent = '测试中…';
+
     try {
-      const data = await fetch('/api/auth/google').then(r => r.json());
-      if (data.auth_url) {
-        window.location.href = data.auth_url;
+      // First save the current values
+      await this._saveFeishu();
+      // Then test connection
+      const status = await fetch('/api/auth/feishu/status').then(r => r.json());
+
+      if (status.status === 'authorized') {
+        App.toast('飞书连接测试成功', 'success');
       } else {
-        App.toast(data.error || '获取授权链接失败', 'error');
+        App.toast(status.message || '连接失败', 'error');
       }
+      await this._checkFeishuStatus();
     } catch (e) {
-      App.toast('请求失败：' + e.message, 'error');
+      App.toast('测试失败：' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '测试连接';
     }
   },
 

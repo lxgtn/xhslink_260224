@@ -1,5 +1,5 @@
 """
-Google Sheets service – OAuth2 authentication and spreadsheet read/write.
+Feishu Sheets service – App-based authentication and spreadsheet read/write.
 
 Column layout (A–M, 1-based):
   A=link  B=title  C=author  D=date  E=stars  F=text_original
@@ -7,86 +7,114 @@ Column layout (A–M, 1-based):
   K=summary  L=auto  M=error
 """
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
+import httpx
+import time
 
-from config import CREDENTIALS_PATH, GOOGLE_SCOPES, TOKEN_PATH
+from app.db import models as db
 
-
-# ── Auth helpers ───────────────────────────────────────────────────────────────
-
-def get_credentials() -> Credentials | None:
-    creds = None
-    if TOKEN_PATH.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), GOOGLE_SCOPES)
-    if creds and creds.valid:
-        return creds
-    if creds and creds.expired and creds.refresh_token:
-        try:
-            creds.refresh(Request())
-            TOKEN_PATH.write_text(creds.to_json())
-            return creds
-        except Exception:
-            pass
-    return None
+FEISHU_BASE = "https://open.feishu.cn/open-apis"
+_token_cache: dict = {"token": "", "expires_at": 0.0}
+_sheet_id_cache: dict[str, str] = {}
 
 
-def get_auth_url(redirect_uri: str) -> str:
-    flow = Flow.from_client_secrets_file(
-        str(CREDENTIALS_PATH),
-        scopes=GOOGLE_SCOPES,
-        redirect_uri=redirect_uri,
-    )
-    auth_url, _ = flow.authorization_url(access_type="offline", prompt="consent")
-    return auth_url
+async def _get_access_token() -> str:
+    """Get Feishu app_access_token (cached for ~2 hours)."""
+    now = time.time()
+    if _token_cache["token"] and now < _token_cache["expires_at"] - 300:
+        return _token_cache["token"]
+
+    cfg = await db.get_all_config()
+    app_id = cfg.get("feishu_app_id", "").strip()
+    app_secret = cfg.get("feishu_app_secret", "").strip()
+
+    if not app_id or not app_secret:
+        raise RuntimeError("飞书 App ID 或 App Secret 未配置")
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{FEISHU_BASE}/auth/v3/app_access_token/internal",
+            json={"app_id": app_id, "app_secret": app_secret},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    if data.get("code") != 0:
+        raise RuntimeError(f"飞书授权失败: {data.get('msg', '未知错误')}")
+
+    token = data.get("app_access_token", "")
+    expire = data.get("expire", 7200)
+    _token_cache["token"] = token
+    _token_cache["expires_at"] = now + expire
+    return token
 
 
-def exchange_code(code: str, redirect_uri: str):
-    flow = Flow.from_client_secrets_file(
-        str(CREDENTIALS_PATH),
-        scopes=GOOGLE_SCOPES,
-        redirect_uri=redirect_uri,
-    )
-    flow.fetch_token(code=code)
-    TOKEN_PATH.write_text(flow.credentials.to_json())
+async def _get_sheet_id(token: str, spreadsheet_token: str) -> str:
+    """Get the first sheet ID (cached)."""
+    if spreadsheet_token in _sheet_id_cache:
+        return _sheet_id_cache[spreadsheet_token]
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{FEISHU_BASE}/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    if data.get("code") != 0:
+        raise RuntimeError(f"获取工作表失败: {data.get('msg', '未知错误')}")
+
+    sheets = data.get("data", {}).get("sheets", [])
+    if not sheets:
+        raise RuntimeError("电子表格中没有找到工作表")
+
+    sheet_id = sheets[0].get("sheet_id", "")
+    _sheet_id_cache[spreadsheet_token] = sheet_id
+    return sheet_id
 
 
-def get_auth_status() -> dict:
-    if not CREDENTIALS_PATH.exists():
+async def get_auth_status() -> dict:
+    """Check if Feishu credentials are configured and valid."""
+    cfg = await db.get_all_config()
+    app_id = cfg.get("feishu_app_id", "").strip()
+    app_secret = cfg.get("feishu_app_secret", "").strip()
+
+    if not app_id or not app_secret:
         return {
             "status": "no_credentials",
-            "message": "请将 credentials.json 放入 data/ 目录",
+            "message": "请先在设置页面填写飞书 App ID 和 App Secret",
         }
-    creds = get_credentials()
-    if creds:
-        return {"status": "authorized", "message": "已授权"}
-    return {"status": "unauthorized", "message": "未授权，请点击授权按钮"}
+
+    try:
+        await _get_access_token()
+        return {"status": "authorized", "message": "飞书授权正常"}
+    except Exception as e:
+        return {"status": "unauthorized", "message": f"授权失败: {e}"}
 
 
-# ── Sheets read/write ──────────────────────────────────────────────────────────
-
-def _build_service():
-    creds = get_credentials()
-    if not creds:
-        raise RuntimeError("Google Sheets 未授权，请在设置页面完成授权")
-    return build("sheets", "v4", credentials=creds)
-
-
-def get_pending_rows(sheet_id: str) -> list[tuple[int, str]]:
+async def get_pending_rows(spreadsheet_token: str) -> list[tuple[int, str]]:
     """
     Return (row_index, link) for every row where auto='' AND error=''.
     Row indices are 1-based (row 1 = header, data starts at row 2).
     """
-    service = _build_service()
-    result = (
-        service.spreadsheets()
-        .values()
-        .get(spreadsheetId=sheet_id, range="A:M")
-        .execute()
-    )
-    values = result.get("values", [])
+    token = await _get_access_token()
+    sheet_id = await _get_sheet_id(token, spreadsheet_token)
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{FEISHU_BASE}/sheets/v2/spreadsheets/{spreadsheet_token}/values/{sheet_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    if data.get("code") != 0:
+        raise RuntimeError(f"读取表格失败: {data.get('msg', '未知错误')}")
+
+    values = data.get("data", {}).get("valueRange", {}).get("values", [])
 
     pending: list[tuple[int, str]] = []
     for i, row in enumerate(values[1:], start=2):  # skip header row
@@ -101,12 +129,13 @@ def get_pending_rows(sheet_id: str) -> list[tuple[int, str]]:
     return pending
 
 
-def write_row(sheet_id: str, row_index: int, data: dict):
+async def write_row(spreadsheet_token: str, row_index: int, data: dict):
     """
     Write scraped + processed fields to columns B–K of the given row.
     Empty values are replaced with '0'.
     """
-    service = _build_service()
+    token = await _get_access_token()
+    sheet_id = await _get_sheet_id(token, spreadsheet_token)
 
     fields = [
         "title", "author", "date", "stars", "text_original",
@@ -122,35 +151,58 @@ def write_row(sheet_id: str, row_index: int, data: dict):
             val = ", ".join(str(v) for v in val) if val else "0"
         values.append(str(val))
 
-    service.spreadsheets().values().update(
-        spreadsheetId=sheet_id,
-        range=f"B{row_index}:K{row_index}",
-        valueInputOption="RAW",
-        body={"values": [values]},
-    ).execute()
+    range_str = f"{sheet_id}!B{row_index}:K{row_index}"
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.put(
+            f"{FEISHU_BASE}/sheets/v2/spreadsheets/{spreadsheet_token}/values",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "valueRange": {
+                    "range": range_str,
+                    "values": [values],
+                }
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+
+    if result.get("code") != 0:
+        raise RuntimeError(f"写入表格失败: {result.get('msg', '未知错误')}")
 
 
-def update_status(
-    sheet_id: str,
+async def update_status(
+    spreadsheet_token: str,
     row_index: int,
     auto: str | None = None,
     error: str | None = None,
 ):
     """Update the auto (column L) and/or error (column M) fields."""
-    service = _build_service()
+    token = await _get_access_token()
+    sheet_id = await _get_sheet_id(token, spreadsheet_token)
 
+    updates = []
     if auto is not None:
-        service.spreadsheets().values().update(
-            spreadsheetId=sheet_id,
-            range=f"L{row_index}",
-            valueInputOption="RAW",
-            body={"values": [[str(auto)]]},
-        ).execute()
-
+        updates.append(("L", str(auto)))
     if error is not None:
-        service.spreadsheets().values().update(
-            spreadsheetId=sheet_id,
-            range=f"M{row_index}",
-            valueInputOption="RAW",
-            body={"values": [[str(error)[:500]]]},
-        ).execute()
+        updates.append(("M", str(error)[:500]))
+
+    for col, val in updates:
+        range_str = f"{sheet_id}!{col}{row_index}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(
+                f"{FEISHU_BASE}/sheets/v2/spreadsheets/{spreadsheet_token}/values",
+                headers={"Authorization": f"Bearer {token}"},
+                json={
+                    "valueRange": {
+                        "range": range_str,
+                        "values": [[val]],
+                    }
+                },
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            if result.get("code") != 0:
+                raise RuntimeError(f"更新状态失败: {result.get('msg', '未知错误')}")

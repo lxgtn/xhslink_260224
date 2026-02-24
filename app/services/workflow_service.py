@@ -33,7 +33,13 @@ async def start_workflow() -> str:
 
     sheets_id = cfg.get("sheets_id", "").strip()
     if not sheets_id:
-        raise RuntimeError("请先在设置页面填写并保存 Google Sheets ID")
+        raise RuntimeError("请先在设置页面填写并保存飞书多维表格 ID")
+
+    # Check Feishu credentials
+    feishu_app_id = cfg.get("feishu_app_id", "").strip()
+    feishu_app_secret = cfg.get("feishu_app_secret", "").strip()
+    if not feishu_app_id or not feishu_app_secret:
+        raise RuntimeError("请先在设置页面填写并保存飞书 App ID 和 App Secret")
 
     api_key = cfg.get("ai_api_key", "").strip()
     if not api_key:
@@ -63,13 +69,13 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
     failed_count = 0
 
     try:
-        await sse.emit(run_id, "info", "🚀 开始读取 Google Sheets...")
+        await sse.emit(run_id, "info", "🚀 开始读取飞书多维表格...")
 
-        # F1: read pending rows (sync call wrapped in thread)
+        # F1: read pending rows
         try:
-            pending = await asyncio.to_thread(sheets_service.get_pending_rows, sheets_id)
+            pending = await sheets_service.get_pending_rows(sheets_id)
         except Exception as e:
-            await sse.emit(run_id, "error", f"❌ 读取 Google Sheets 失败：{e}")
+            await sse.emit(run_id, "error", f"❌ 读取飞书多维表格失败：{e}")
             await db.complete_run(run_id, "failed")
             await sse.close_stream(run_id)
             return
@@ -130,7 +136,7 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
                 await sse.emit(run_id, "info", "  ✓ 内容总结生成完成")
 
                 # F8: Write back
-                await sse.emit(run_id, "info", "  → 写入 Google Sheets...")
+                await sse.emit(run_id, "info", "  → 写入飞书多维表格...")
                 row_data = {
                     "title": note.get("title", "0"),
                     "author": note.get("author", "0"),
@@ -147,12 +153,10 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
                     "video_processed": video_processed,
                     "summary": summary,
                 }
-                await asyncio.to_thread(sheets_service.write_row, sheets_id, row_index, row_data)
+                await sheets_service.write_row(sheets_id, row_index, row_data)
 
                 # F9: Mark success
-                await asyncio.to_thread(
-                    sheets_service.update_status, sheets_id, row_index, "1", None
-                )
+                await sheets_service.update_status(sheets_id, row_index, "1", None)
 
                 success_count += 1
                 await db.update_run(run_id, success=success_count)
@@ -163,9 +167,7 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
                 failed_count += 1
                 await db.update_run(run_id, failed=failed_count)
                 try:
-                    await asyncio.to_thread(
-                        sheets_service.update_status, sheets_id, row_index, None, err_msg
-                    )
+                    await sheets_service.update_status(sheets_id, row_index, None, err_msg)
                 except Exception:
                     pass
                 await sse.emit(run_id, "error", f"  ✗ 第 {i}/{total} 条处理失败：{err_msg[:200]}")
