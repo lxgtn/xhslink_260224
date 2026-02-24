@@ -5,13 +5,15 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      export PLAYWRIGHT_BROWSERS_PATH=/opt/render/.cache/ms-playwright
-      python -m playwright install chromium
-      echo "=== Playwright cache after install ==="
-      ls -la /opt/render/.cache/ms-playwright/ || echo "Cache dir not found"
+      PLAYWRIGHT_BROWSERS_PATH=0 python -m playwright install chromium --with-deps
+      echo "=== Playwright installed ==="
+      echo "=== Current directory: $(pwd) ==="
+      echo "=== Directory contents: $(ls -la) ==="
+      echo "=== Playwright directory: $(ls -la .playwright 2>/dev/null || echo 'not found') ==="
     startCommand: |
       echo "=== Starting service ==="
-      echo "Cache contents: $(ls /opt/render/.cache/ms-playwright/ 2>/dev/null || echo 'empty')"
+      echo "=== Current directory: $(pwd) ==="
+      echo "=== Directory contents: $(ls -la) ==="
       uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -19,5 +21,5 @@ services:
       - key: PORT
         value: 8000
       - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/.cache/ms-playwright
+        value: "0"
     healthCheckPath: /api/auth/feishu/status

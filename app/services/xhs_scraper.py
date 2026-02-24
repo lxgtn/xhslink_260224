@@ -27,13 +27,26 @@ def _get_chromium_path() -> Optional[str]:
     """Find Chromium executable on Render or other environments."""
     import glob
 
-    # Possible chromium paths on Render
-    patterns = [
-        "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
-        "/opt/render/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+    # When PLAYWRIGHT_BROWSERS_PATH=0, browsers are installed in project directory
+    # Check local playwright directory first (for Render with PLAYWRIGHT_BROWSERS_PATH=0)
+    local_patterns = [
+        "./.playwright/chromium-*/chrome-linux/chrome",
+        "./.playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+        "./playwright/chromium-*/chrome-linux/chrome",
+        "./playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
     ]
 
-    for pattern in patterns:
+    # Also check standard cache locations
+    cache_patterns = [
+        "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/opt/render/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+        os.path.expanduser("~/.cache/ms-playwright/chromium-*/chrome-linux/chrome"),
+        os.path.expanduser("~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell"),
+    ]
+
+    all_patterns = local_patterns + cache_patterns
+
+    for pattern in all_patterns:
         paths = glob.glob(pattern)
         for path in paths:
             if os.path.exists(path) and os.access(path, os.X_OK):
@@ -46,13 +59,15 @@ def _get_chromium_path() -> Optional[str]:
         print(f"[Playwright] Using env Chromium: {env_path}")
         return env_path
 
-    # List what's in the cache directory for debugging
+    # Debug: list current directory and common cache locations
+    print("[Playwright] Debug: Searching for browsers...")
     try:
-        cache_dir = "/opt/render/.cache/ms-playwright"
-        if os.path.exists(cache_dir):
-            print(f"[Playwright] Cache contents: {os.listdir(cache_dir)}")
+        print(f"[Playwright] Current dir: {os.getcwd()}")
+        print(f"[Playwright] Current dir contents: {os.listdir('.')}")
+        if os.path.exists("./.playwright"):
+            print(f"[Playwright] ./.playwright contents: {os.listdir('./.playwright')}")
     except Exception as e:
-        print(f"[Playwright] Error listing cache: {e}")
+        print(f"[Playwright] Error listing current dir: {e}")
 
     print("[Playwright] No custom Chromium path found, using default")
     return None
