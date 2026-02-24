@@ -68,7 +68,10 @@
       "Bash(curl -s \"https://lxgtn.github.io/xhslink_260224/frontend/js/app.js\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/api/cookies.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''cookies.py OK''\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xhs_scraper.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''xhs_scraper.py OK''\\)\")",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xhs_scraper.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xhs_scraper.py'', encoding=''utf-8''\\).read\\(\\)\\)\")",
+      "Bash(python3 -m py_compile app/services/xhs_scraper.py)"
     ]
   }
 }
