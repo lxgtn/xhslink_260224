@@ -85,6 +85,7 @@ XHS_COOKIE_RAW_PATH = XHS_COOKIES_PATH.parent / "xhs_cookie_raw.txt"
 
 def save_cookie_raw_string(cookie_string: str):
     """Save raw cookie string for auto-fill."""
+    XHS_COOKIE_RAW_PATH.parent.mkdir(parents=True, exist_ok=True)
     XHS_COOKIE_RAW_PATH.write_text(cookie_string, encoding="utf-8")
 
 
