@@ -39,10 +39,17 @@ const Settings = {
   async _loadConfig() {
     try {
       const cfg = await fetch(this._apiUrl('/api/config')).then(r => r.json());
-      document.getElementById('ai-provider').value = cfg.ai_provider || '';
-      document.getElementById('ai-model').value    = cfg.ai_model    || '';
-      document.getElementById('ai-base-url').value = cfg.ai_base_url || '';
-      document.getElementById('ai-api-key').value  = '';  // never pre-fill password
+
+      // Only fill empty fields to avoid overwriting user input
+      const setIfEmpty = (id, value) => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = value || '';
+      };
+
+      setIfEmpty('ai-provider', cfg.ai_provider);
+      setIfEmpty('ai-model', cfg.ai_model);
+      setIfEmpty('ai-base-url', cfg.ai_base_url);
+      // API Key: never pre-fill, but show hint if saved
 
       const hint = document.getElementById('ai-key-hint');
       if (cfg.ai_api_key_set) {
@@ -52,10 +59,9 @@ const Settings = {
         hint.style.display = 'none';
       }
 
-      document.getElementById('sheets-id').value = cfg.sheets_id || '';
-      document.getElementById('feishu-app-id').value = cfg.feishu_app_id || '';
-      // Auto-fill Feishu App Secret for convenience (unlike API key which stays blank)
-      document.getElementById('feishu-app-secret').value = cfg.feishu_app_secret || '';
+      setIfEmpty('sheets-id', cfg.sheets_id);
+      setIfEmpty('feishu-app-id', cfg.feishu_app_id);
+      setIfEmpty('feishu-app-secret', cfg.feishu_app_secret);
 
       const secretHint = document.getElementById('feishu-secret-hint');
       if (cfg.feishu_app_secret_set) {
