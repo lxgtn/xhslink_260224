@@ -2,9 +2,9 @@
 
 ## v1.1.0 – 飞书多维表格迁移
 
-**记录时间**：2026-02-24
+**记录时间**：2026-02-25
 **版本号**：v1.1.0
-**状态**：已迁移
+**状态**：已迁移，README 已同步更新
 
 ### 变更摘要
 
@@ -12,19 +12,21 @@
 - 移除 Google OAuth 2.0 授权流程，改用飞书 App ID + App Secret
 - 所有表格 API 调用改为异步（httpx），简化代码
 - 前端设置页面更新：Google 授权 → 飞书配置（App ID、App Secret、测试连接）
+- 更新 README.md 文档，同步飞书配置说明
 
 ### 文件变更
 
 | 文件 | 变更 |
 |------|------|
-| `app/services/sheets_service.py` | 完全重写，使用飞书 API |
-| `app/services/workflow_service.py` | 移除 `asyncio.to_thread()` 包装器 |
+| `app/services/sheets_service.py` | 完全重写，使用飞书 API (httpx 异步) |
+| `app/services/workflow_service.py` | 移除 `asyncio.to_thread()` 包装器，更新错误提示 |
 | `app/api/auth.py` | 移除 Google OAuth，添加 `/api/auth/feishu/status` |
-| `app/api/config_api.py` | 添加 `feishu_app_id`、`feishu_app_secret` 字段 |
-| `config.py` | 移除 Google 相关常量 |
-| `requirements.txt` | 移除 `google-*` 依赖 |
-| `frontend/index.html` | 飞书配置表单 |
-| `frontend/js/settings.js` | 飞书连接测试 |
+| `app/api/config_api.py` | 添加 `feishu_app_id`、`feishu_app_secret` 字段，支持脱敏显示 |
+| `config.py` | 移除 Google 相关常量 (CREDENTIALS_PATH, TOKEN_PATH, GOOGLE_SCOPES) |
+| `requirements.txt` | 移除 `google-auth-oauthlib`, `google-api-python-client`, `google-auth-httplib2` |
+| `frontend/index.html` | Google Sheets 表单 → 飞书多维表格配置表单 |
+| `frontend/js/settings.js` | Google OAuth 流程 → 飞书连接测试与保存 |
+| `README.md` | 更新安装步骤、配置说明、FAQ，移除 Google 相关引用 |
 
 ### 飞书配置步骤
 
