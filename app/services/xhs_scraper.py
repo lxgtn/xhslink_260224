@@ -304,7 +304,16 @@ async def scrape_note(url: str) -> dict:
         raise RuntimeError("未获取小红书 Cookie，请先在设置页面获取 Cookie")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        # Launch browser with Render-compatible settings
+        browser = await p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ],
+        )
         context = await browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "

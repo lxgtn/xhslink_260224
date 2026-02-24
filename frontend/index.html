@@ -141,9 +141,10 @@
       </div>
       <p class="hint">
         点击「粘贴 Cookie」，从浏览器开发者工具复制 Cookie 并粘贴。
-        <br>步骤：1）打开小红书网页并登录；2）按 F12 打开开发者工具；
-        3）切换到「Application/应用」标签；4）在左侧找到 Cookies → https://www.xiaohongshu.com；
-        5）右键选择「Copy as cURL」或复制任意 cookie 值，粘贴到下方。
+        <br>步骤：1）打开小红书网页并登录；2）按 F12 或右键「检查」打开开发者工具；
+        3）切换到「Network/网络」标签；4）点击任意一项请求；
+        5）在右侧 Headers/标头 中找到 Request Headers/请求标头 → Cookie；
+        6）复制完整的 Cookie 字符串，粘贴到下方。
       </p>
       <div id="cookie-import-area" style="display:none; margin-top:16px;">
         <div class="form-group">
