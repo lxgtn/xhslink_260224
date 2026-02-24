@@ -24,7 +24,7 @@
 1. 点击 **"New"** → **"Web Service"**
 2. 选择你的 `xhslink_260224` GitHub 仓库
 3. 配置如下：
-   - **Name**: `xhslink-backend`（或任意名称）
+   - **Name**: `xhslink_260224_backend`（或任意名称）
    - **Runtime**: `Python 3`
    - **Build Command**:
      ```bash
@@ -46,7 +46,7 @@
 部署完成后，Render 会分配一个域名：
 
 ```
-https://xhslink-backend.onrender.com
+https://xhslink-260224-backend.onrender.com
 ```
 
 复制这个 URL，下一步需要用到。
@@ -64,7 +64,7 @@ https://xhslink-backend.onrender.com
 const API_BASE_URL = '';  // 本地运行
 
 // 改为你的 Render URL：
-const API_BASE_URL = 'https://xhslink-backend.onrender.com';  // 生产环境
+const API_BASE_URL = 'https://xhslink-260224-backend.onrender.com';  // 生产环境
 ```
 
 ### 2. 提交更改

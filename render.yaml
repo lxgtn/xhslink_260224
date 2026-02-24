@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: xhslink-backend
+    name: xhslink_260224_backend
     runtime: python
     plan: free
     buildCommand: |

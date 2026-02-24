@@ -1,5 +1,31 @@
 # Development Log
 
+## v1.1.1 – 灵活列顺序支持
+
+**记录时间**：2026-02-25
+**版本号**：v1.1.1
+**状态**：已完成
+
+### 变更摘要
+
+- 飞书表格列顺序从「严格固定」改为「灵活映射」
+- 通过读取第一行表头自动建立列名到索引的映射
+- 用户可自由调整列的顺序，只要表头名称匹配即可
+- 如果缺少必需列，会在运行时给出明确错误提示
+
+### 文件变更
+
+| 文件 | 变更 |
+|------|------|
+| `app/services/sheets_service.py` | 重写列访问逻辑：添加 `_build_column_map()`、`_col_index()`、`_col_to_letter()` 等辅助函数，支持动态列映射和缓存 |
+| `README.md` | 更新表格准备说明，强调列顺序可灵活调整 |
+
+### 必需列（表头名称）
+
+`link`, `title`, `author`, `date`, `stars`, `text_original`, `pic_url_list`, `video_url_list`, `pic_processed`, `video_processed`, `summary`, `auto`, `error`
+
+---
+
 ## v1.1.0 – 飞书多维表格迁移
 
 **记录时间**：2026-02-25
