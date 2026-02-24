@@ -25,16 +25,24 @@ from config import XHS_COOKIES_PATH
 
 def _get_chromium_path() -> Optional[str]:
     """Find Chromium executable on Render or other environments."""
-    # Render specific path
-    render_path = "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome"
     import glob
-    paths = glob.glob(render_path)
-    if paths:
-        return paths[0]
+
+    # Possible chromium paths on Render
+    patterns = [
+        "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        "/opt/render/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+    ]
+
+    for pattern in patterns:
+        paths = glob.glob(pattern)
+        if paths:
+            return paths[0]
+
     # Check environment variable
     env_path = os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
     if env_path and os.path.exists(env_path):
         return env_path
+
     return None
 
 # ── Global state for cookie capture ───────────────────────────────────────────
@@ -57,6 +65,22 @@ def save_cookies(cookies: list):
     XHS_COOKIES_PATH.write_text(
         json.dumps(cookies, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+
+
+# Path to store raw cookie string for auto-fill
+XHS_COOKIE_RAW_PATH = XHS_COOKIES_PATH.parent / "xhs_cookie_raw.txt"
+
+
+def save_cookie_raw_string(cookie_string: str):
+    """Save raw cookie string for auto-fill."""
+    XHS_COOKIE_RAW_PATH.write_text(cookie_string, encoding="utf-8")
+
+
+def get_cookie_raw_string() -> str:
+    """Get saved raw cookie string for auto-fill."""
+    if XHS_COOKIE_RAW_PATH.exists():
+        return XHS_COOKIE_RAW_PATH.read_text(encoding="utf-8")
+    return ""
 
 
 def get_cookie_status() -> dict:
@@ -84,6 +108,9 @@ def import_cookies_from_string(cookie_string: str) -> dict:
     """
     import json
     cookies = []
+
+    # Save raw string for auto-fill (even if parsing fails, user can edit and retry)
+    save_cookie_raw_string(cookie_string)
 
     # Try parsing as JSON first
     try:
