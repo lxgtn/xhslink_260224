@@ -13,6 +13,7 @@ Note scraping:
 
 import asyncio
 import json
+import os
 import re
 from datetime import datetime
 from typing import Optional
@@ -20,6 +21,21 @@ from typing import Optional
 from playwright.async_api import Browser, async_playwright
 
 from config import XHS_COOKIES_PATH
+
+
+def _get_chromium_path() -> Optional[str]:
+    """Find Chromium executable on Render or other environments."""
+    # Render specific path
+    render_path = "/opt/render/.cache/ms-playwright/chromium-*/chrome-linux/chrome"
+    import glob
+    paths = glob.glob(render_path)
+    if paths:
+        return paths[0]
+    # Check environment variable
+    env_path = os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
+    if env_path and os.path.exists(env_path):
+        return env_path
+    return None
 
 # ── Global state for cookie capture ───────────────────────────────────────────
 _capture_browser: Optional[Browser] = None
@@ -305,15 +321,20 @@ async def scrape_note(url: str) -> dict:
 
     async with async_playwright() as p:
         # Launch browser with Render-compatible settings
-        browser = await p.chromium.launch(
-            headless=True,
-            args=[
+        chromium_path = _get_chromium_path()
+        launch_options = {
+            "headless": True,
+            "args": [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
             ],
-        )
+        }
+        if chromium_path:
+            launch_options["executable_path"] = chromium_path
+
+        browser = await p.chromium.launch(**launch_options)
         context = await browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
