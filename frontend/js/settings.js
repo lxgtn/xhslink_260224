@@ -54,7 +54,8 @@ const Settings = {
 
       document.getElementById('sheets-id').value = cfg.sheets_id || '';
       document.getElementById('feishu-app-id').value = cfg.feishu_app_id || '';
-      document.getElementById('feishu-app-secret').value = '';  // never pre-fill
+      // Auto-fill Feishu App Secret for convenience (unlike API key which stays blank)
+      document.getElementById('feishu-app-secret').value = cfg.feishu_app_secret || '';
 
       const secretHint = document.getElementById('feishu-secret-hint');
       if (cfg.feishu_app_secret_set) {
@@ -114,7 +115,7 @@ const Settings = {
         dot.className  = 'status-dot success';
         text.textContent = '连接正常';
       } else if (status.status === 'no_credentials') {
-        dot.className  = 'status-dot error';
+        dot.className  = 'status-dot idle';
         text.textContent = '未配置';
       } else {
         dot.className  = 'status-dot error';

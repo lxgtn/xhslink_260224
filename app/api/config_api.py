@@ -34,7 +34,7 @@ async def get_config():
     cfg["ai_api_key"] = ""  # never send raw key
     cfg["ai_api_key_masked"] = _mask_key(raw_key)
     cfg["ai_api_key_set"] = bool(raw_key)
-    cfg["feishu_app_secret"] = ""  # never send raw secret
+    # Return raw secret for auto-fill (different security model than API key)
     cfg["feishu_app_secret_masked"] = _mask_key(raw_secret)
     cfg["feishu_app_secret_set"] = bool(raw_secret)
     return cfg
