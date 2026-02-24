@@ -7,12 +7,16 @@ const History = {
     // Lazy load on tab switch via App.switchTab
   },
 
+  _apiUrl(path) {
+    return API_BASE_URL + path;
+  },
+
   async load() {
     const container = document.getElementById('history-list');
     container.innerHTML = '<p class="loading-text">加载中…</p>';
 
     try {
-      const data = await fetch('/api/history').then(r => r.json());
+      const data = await fetch(this._apiUrl('/api/history')).then(r => r.json());
       const runs = data.runs || [];
 
       if (runs.length === 0) {
@@ -60,7 +64,7 @@ const History = {
   async _loadEvents(runId, container) {
     container.innerHTML = '<p class="loading-text" style="color:#555">加载中…</p>';
     try {
-      const data = await fetch(`/api/history/${encodeURIComponent(runId)}`).then(r => r.json());
+      const data = await fetch(this._apiUrl(`/api/history/${encodeURIComponent(runId)}`)).then(r => r.json());
       const events = data.events || [];
 
       if (events.length === 0) {

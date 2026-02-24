@@ -60,17 +60,32 @@ async def _get_sheet_id(token: str, spreadsheet_token: str) -> str:
             headers={"Authorization": f"Bearer {token}"},
             timeout=30.0,
         )
+        if resp.status_code == 400:
+            error_data = resp.json() if resp.text else {}
+            error_msg = error_data.get("msg", "请求参数错误")
+            raise RuntimeError(f"访问多维表格失败: {error_msg}（请确认: 1.表格ID正确 2.应用已发布或表格已分享给应用）")
         resp.raise_for_status()
         data = resp.json()
 
     if data.get("code") != 0:
-        raise RuntimeError(f"获取工作表失败: {data.get('msg', '未知错误')}")
+        error_msg = data.get('msg', '未知错误')
+        # 常见错误提示
+        if "permission" in error_msg.lower() or "access" in error_msg.lower():
+            error_msg += "（请检查：1.应用是否已发布 2.表格是否已分享给应用所在企业）"
+        elif "not found" in error_msg.lower() or "exist" in error_msg.lower():
+            error_msg += "（请检查多维表格ID是否正确）"
+        raise RuntimeError(f"获取工作表失败: {error_msg}")
 
     sheets = data.get("data", {}).get("sheets", [])
     if not sheets:
         raise RuntimeError("电子表格中没有找到工作表")
 
-    sheet_id = sheets[0].get("sheet_id", "")
+    raw_sheet_id = sheets[0].get("sheet_id", "")
+    # 确保返回字符串（API 有时会返回列表）
+    if isinstance(raw_sheet_id, list):
+        sheet_id = raw_sheet_id[0] if raw_sheet_id else ""
+    else:
+        sheet_id = str(raw_sheet_id)
     _sheet_id_cache[spreadsheet_token] = sheet_id
     return sheet_id
 

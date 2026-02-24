@@ -29,9 +29,13 @@ const Settings = {
 
   // ── Load / save config ─────────────────────────────────────────
 
+  _apiUrl(path) {
+    return API_BASE_URL + path;
+  },
+
   async _loadConfig() {
     try {
-      const cfg = await fetch('/api/config').then(r => r.json());
+      const cfg = await fetch(this._apiUrl('/api/config')).then(r => r.json());
       document.getElementById('ai-provider').value = cfg.ai_provider || '';
       document.getElementById('ai-model').value    = cfg.ai_model    || '';
       document.getElementById('ai-base-url').value = cfg.ai_base_url || '';
@@ -68,7 +72,7 @@ const Settings = {
     const key = document.getElementById('ai-api-key').value.trim();
     if (key) payload.ai_api_key = key;
 
-    await fetch('/api/config', {
+    await fetch(this._apiUrl('/api/config'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -85,7 +89,7 @@ const Settings = {
     const secret = document.getElementById('feishu-app-secret').value.trim();
     if (secret) payload.feishu_app_secret = secret;
 
-    await fetch('/api/config', {
+    await fetch(this._apiUrl('/api/config'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -99,7 +103,7 @@ const Settings = {
 
   async _checkFeishuStatus() {
     try {
-      const status = await fetch('/api/auth/feishu/status').then(r => r.json());
+      const status = await fetch(this._apiUrl('/api/auth/feishu/status')).then(r => r.json());
       const dot  = document.getElementById('feishu-status-dot');
       const text = document.getElementById('feishu-status-text');
 
@@ -130,7 +134,7 @@ const Settings = {
       // First save the current values
       await this._saveFeishu();
       // Then test connection
-      const status = await fetch('/api/auth/feishu/status').then(r => r.json());
+      const status = await fetch(this._apiUrl('/api/auth/feishu/status')).then(r => r.json());
 
       if (status.status === 'authorized') {
         App.toast('飞书连接测试成功', 'success');
@@ -150,7 +154,7 @@ const Settings = {
 
   async _checkCookieStatus() {
     try {
-      const status = await fetch('/api/cookies/status').then(r => r.json());
+      const status = await fetch(this._apiUrl('/api/cookies/status')).then(r => r.json());
       this._renderCookieStatus(status);
     } catch (_) {}
   },
@@ -186,7 +190,7 @@ const Settings = {
     document.getElementById('cookie-status-text').textContent = '正在打开浏览器…';
 
     try {
-      await fetch('/api/cookies/capture', { method: 'POST' });
+      await fetch(this._apiUrl('/api/cookies/capture'), { method: 'POST' });
       App.toast('已打开小红书网页，请在弹出的窗口中完成登录', 'info', 6000);
     } catch (e) {
       App.toast('启动失败：' + e.message, 'error');
@@ -197,7 +201,7 @@ const Settings = {
     // Poll cookie status
     this._cookiePoller = setInterval(async () => {
       try {
-        const status = await fetch('/api/cookies/status').then(r => r.json());
+        const status = await fetch(this._apiUrl('/api/cookies/status')).then(r => r.json());
         this._renderCookieStatus(status);
         if (status.status === 'captured') {
           this._stopCookiePoller();
@@ -219,7 +223,7 @@ const Settings = {
     this._stopCookiePoller();
     this._resetCaptureBtn();
     try {
-      await fetch('/api/cookies/cancel', { method: 'POST' });
+      await fetch(this._apiUrl('/api/cookies/cancel'), { method: 'POST' });
     } catch (_) {}
     await this._checkCookieStatus();
   },

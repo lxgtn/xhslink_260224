@@ -8,6 +8,10 @@ const Workflow = {
   lastEventId: 0,
   statusPoller: null,
 
+  _apiUrl(path) {
+    return API_BASE_URL + path;
+  },
+
   init() {
     document.getElementById('start-btn').addEventListener('click', () => this.start());
     document.getElementById('clear-log-btn').addEventListener('click', () => this.clearLog());
@@ -18,7 +22,7 @@ const Workflow = {
 
   async _checkRunningStatus() {
     try {
-      const res = await fetch('/api/workflow/status').then(r => r.json());
+      const res = await fetch(this._apiUrl('/api/workflow/status')).then(r => r.json());
       if (res.status === 'running') {
         this._setRunning(res.run_id, res.total, res.success, res.failed);
         this._connectSSE(res.run_id, this.lastEventId);
@@ -30,7 +34,7 @@ const Workflow = {
 
   async start() {
     try {
-      const res = await fetch('/api/workflow/start', { method: 'POST' });
+      const res = await fetch(this._apiUrl('/api/workflow/start'), { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         App.toast(data.error || '启动失败', 'error');
@@ -50,7 +54,7 @@ const Workflow = {
     this.currentRunId = runId;
     if (this.eventSource) this.eventSource.close();
 
-    const url = `/api/logs/stream?run_id=${encodeURIComponent(runId)}&after_id=${afterId}`;
+    const url = this._apiUrl(`/api/logs/stream?run_id=${encodeURIComponent(runId)}&after_id=${afterId}`);
     this.eventSource = new EventSource(url);
 
     this.eventSource.onmessage = (e) => {
@@ -97,7 +101,7 @@ const Workflow = {
 
   async _pollStatus() {
     try {
-      const res = await fetch('/api/workflow/status').then(r => r.json());
+      const res = await fetch(this._apiUrl('/api/workflow/status')).then(r => r.json());
       if (res.status === 'idle') {
         this._stopPolling();
         if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }

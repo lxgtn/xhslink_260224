@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import close_db, init_db
 from app.api import auth, config_api, cookies, history, logs, workflow
@@ -19,6 +20,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="XHS Link", version="1.0.0", lifespan=lifespan)
+
+# ── CORS for GitHub Pages frontend ────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Production: replace with your GitHub Pages URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── API routes ─────────────────────────────────────────────────────────────────
 app.include_router(workflow.router, prefix="/api")

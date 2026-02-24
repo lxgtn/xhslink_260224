@@ -4,6 +4,10 @@
  * DOMContentLoaded and expose a public init() method.
  */
 
+// ── API Configuration ────────────────────────────────────────────
+// Change this to your Railway backend URL after deployment
+const API_BASE_URL = '';  // Empty = same origin (localhost), or 'https://your-app.up.railway.app'
+
 const App = {
   currentTab: 'console',
 
@@ -35,12 +39,11 @@ const App = {
     if (params.get('auth_success')) {
       history.replaceState({}, '', '/');
       this.switchTab('settings');
-      Settings.checkGoogleStatus();
-      this.toast('Google Sheets 授权成功！', 'success');
+      this.toast('飞书授权成功！', 'success');
     } else if (params.get('auth_error')) {
       history.replaceState({}, '', '/');
       this.switchTab('settings');
-      this.toast('Google 授权失败：' + decodeURIComponent(params.get('auth_error')), 'error');
+      this.toast('飞书授权失败：' + decodeURIComponent(params.get('auth_error')), 'error');
     }
   },
 
