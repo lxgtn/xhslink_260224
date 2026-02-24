@@ -6,7 +6,7 @@
 
 // ── API Configuration ────────────────────────────────────────────
 // Change this to your Railway backend URL after deployment
-const API_BASE_URL = 'https://xhslink_260224_backend.onrender.com';
+const API_BASE_URL = 'https://xhslink-260224-backend.onrender.com';
 
 const App = {
   currentTab: 'console',
