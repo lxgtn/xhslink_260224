@@ -48,3 +48,9 @@ async def import_cookies(payload: CookiePayload):
 async def cancel_capture():
     await xhs_scraper.cancel_capture()
     return {"status": "cancelled"}
+
+
+@router.get("/cookies/raw")
+async def get_cookie_raw():
+    """Get saved raw cookie string for auto-fill."""
+    return {"cookie_string": xhs_scraper.get_cookie_raw_string()}

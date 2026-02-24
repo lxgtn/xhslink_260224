@@ -68,12 +68,15 @@ const Settings = {
   },
 
   async _saveAI() {
-    const payload = {
-      ai_provider:  document.getElementById('ai-provider').value.trim(),
-      ai_model:     document.getElementById('ai-model').value.trim(),
-      ai_base_url:  document.getElementById('ai-base-url').value.trim(),
-    };
+    const payload = {};
+    const provider = document.getElementById('ai-provider').value.trim();
+    const model = document.getElementById('ai-model').value.trim();
+    const baseUrl = document.getElementById('ai-base-url').value.trim();
     const key = document.getElementById('ai-api-key').value.trim();
+
+    if (provider) payload.ai_provider = provider;
+    if (model) payload.ai_model = model;
+    if (baseUrl) payload.ai_base_url = baseUrl;
     if (key) payload.ai_api_key = key;
 
     await fetch(this._apiUrl('/api/config'), {
@@ -86,11 +89,13 @@ const Settings = {
   },
 
   async _saveFeishu() {
-    const payload = {
-      sheets_id: document.getElementById('sheets-id').value.trim(),
-      feishu_app_id: document.getElementById('feishu-app-id').value.trim(),
-    };
+    const payload = {};
+    const sheetsId = document.getElementById('sheets-id').value.trim();
+    const appId = document.getElementById('feishu-app-id').value.trim();
     const secret = document.getElementById('feishu-app-secret').value.trim();
+
+    if (sheetsId) payload.sheets_id = sheetsId;
+    if (appId) payload.feishu_app_id = appId;
     if (secret) payload.feishu_app_secret = secret;
 
     await fetch(this._apiUrl('/api/config'), {
@@ -160,6 +165,15 @@ const Settings = {
     try {
       const status = await fetch(this._apiUrl('/api/cookies/status')).then(r => r.json());
       this._renderCookieStatus(status);
+    } catch (_) {}
+
+    // Load saved raw cookie string for auto-fill
+    try {
+      const raw = await fetch(this._apiUrl('/api/cookies/raw')).then(r => r.json());
+      const cookieInput = document.getElementById('cookie-input');
+      if (raw.cookie_string && cookieInput && !cookieInput.value) {
+        cookieInput.value = raw.cookie_string;
+      }
     } catch (_) {}
   },
 
