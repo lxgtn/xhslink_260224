@@ -4,11 +4,11 @@
 
 ## 功能概览
 
-- 从 Google Sheets 读取待处理的小红书链接
+- 从飞书多维表格读取待处理的小红书链接
 - 自动抓取每条笔记的标题、作者、发布时间、收藏量、正文、图片、视频
 - 调用配置的 AI 大模型解析图片内容和视频内容
 - 生成综合性笔记内容总结
-- 将所有结果实时回写 Google Sheets
+- 将所有结果实时回写飞书多维表格
 - 网页端展示实时进度与日志，并保存历史运行记录
 
 ---
@@ -27,17 +27,20 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 3. 配置 Google Sheets OAuth2
+### 3. 配置飞书应用
 
-1. 前往 [Google Cloud Console](https://console.cloud.google.com/)
-2. 创建项目 → 启用 **Google Sheets API**
-3. 创建 **OAuth 2.0 客户端 ID**（应用类型选「桌面应用」）
-4. 下载 JSON 凭据文件，**重命名为 `credentials.json`**
-5. 将 `credentials.json` 放入本项目的 `data/` 目录（若目录不存在请手动创建）
+1. 前往 [飞书开放平台](https://open.feishu.cn/app/)
+2. 创建「企业自建应用」
+3. 在「权限管理」中添加以下权限：
+   - `drive:drive:readonly`（读取云空间文件）
+   - `sheets:spreadsheet:readonly`（读取电子表格）
+   - `sheets:spreadsheet:write`（编辑电子表格）
+4. 发布应用（或在「测试企业和人员」中添加测试用户）
+5. 在「凭证与基础信息」中获取 **App ID** 和 **App Secret**
 
-### 4. 准备 Google Sheets
+### 4. 准备飞书多维表格
 
-在你的 Google Sheets 第一行添加如下表头（列顺序必须严格一致）：
+在你的飞书多维表格第一行添加如下表头（列顺序必须严格一致）：
 
 | A | B | C | D | E | F | G | H | I | J | K | L | M |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -65,25 +68,28 @@ python run.py
    - 推荐使用支持视觉能力的模型，如 `gpt-4o`、`claude-3-5-sonnet-20241022`、`gemini-2.0-flash`
    - 视频解析建议使用 **Gemini** 系列（原生支持视频分析）
 
-2. **设置 → Google Sheets**：填写 Sheets ID（URL 中间的字母数字串），点击「授权 Google 账号」完成 OAuth 授权
+2. **设置 → 飞书多维表格**：
+   - 填写「多维表格 ID」（URL 中间的字母数字串）
+   - 填写飞书应用的「App ID」和「App Secret」
+   - 点击「保存飞书配置」，然后点击「测试连接」验证
 
 3. **设置 → 小红书 Cookie**：点击「获取 Cookie」，在弹出的浏览器中登录小红书，系统自动检测并保存登录状态
 
 ### 日常使用
 
-1. 在 Google Sheets 中的 A 列填写待处理的小红书链接（auto 和 error 列留空）
+1. 在飞书多维表格的 A 列填写待处理的小红书链接（auto 和 error 列留空）
 2. 打开 `http://localhost:8000`，点击「▶ 开始运行」
 3. 控制台实时展示进度和日志
-4. 处理完成后，Google Sheets 中对应行自动填入所有字段，`auto` 列设为 `1`
+4. 处理完成后，飞书多维表格中对应行自动填入所有字段，`auto` 列设为 `1`
 
 ---
 
-## Sheets ID 获取方式
+## 多维表格 ID 获取方式
 
-打开你的 Google Sheets，复制 URL 中间的部分：
+打开你的飞书多维表格，复制 URL 中间的部分：
 
 ```
-https://docs.google.com/spreadsheets/d/【这里就是 Sheets ID】/edit
+https://bytedance.feishu.cn/base/【这里就是多维表格 ID】
 ```
 
 ---
@@ -96,8 +102,11 @@ A: 请重新点击「获取 Cookie」，在弹出的浏览器中重新登录小�
 **Q: 图片/视频解析失败？**
 A: 检查 API Key 是否有效，以及所用模型是否支持多模态能力。视频解析推荐使用 Gemini。
 
-**Q: Google 授权按钮灰色？**
-A: 请先将 `credentials.json` 放入 `data/` 目录。
+**Q: 飞书连接测试失败？**
+A: 请检查：
+- App ID 和 App Secret 是否填写正确
+- 飞书应用是否已发布，或你已被添加为测试用户
+- 飞书应用是否已启用所需权限（多维表格读写权限）
 
 **Q: 小红书内容抓取失败？**
 A: Cookie 可能已过期，请在设置页面重新获取 Cookie。
@@ -119,8 +128,6 @@ xhslink_260224/
 │   └── schemas/        # Pydantic 数据模型
 ├── frontend/           # 前端静态文件
 └── data/               # 运行时数据（.gitignore 忽略）
-    ├── credentials.json  # 需手动放入
-    ├── token.json        # 自动生成
     ├── xhs_cookies.json  # 自动生成
     └── xhslink.db        # SQLite 数据库（自动创建）
 ```
