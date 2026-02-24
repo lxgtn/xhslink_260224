@@ -121,13 +121,13 @@ header p {
   opacity: 0.4;
   cursor: not-allowed;
 }
-/* Primary button - warm brown tone */
+/* Primary button - deep brown tone */
 .btn-primary  {
-  background: #8b7355;
+  background: #614834;
   color: #f7f5f2;
 }
 .btn-primary:hover:not(:disabled)  {
-  background: #7a6548;
+  background: #4e3a2a;
 }
 /* Secondary button - lighter text */
 .btn-secondary {
