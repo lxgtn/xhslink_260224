@@ -1,10 +1,16 @@
 import asyncio
+from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks
+from pydantic import BaseModel
 
 from app.services import xhs_scraper
 
 router = APIRouter()
+
+
+class CookiePayload(BaseModel):
+    cookie_string: Optional[str] = None
 
 
 @router.get("/cookies/status")
@@ -21,6 +27,21 @@ async def capture_cookies(background_tasks: BackgroundTasks):
         "status": "capturing",
         "message": "已打开浏览器，请在弹出的窗口中登录小红书，登录完成后系统自动保存",
     }
+
+
+@router.post("/cookies/import")
+async def import_cookies(payload: CookiePayload):
+    """
+    Import cookies from browser console.
+    Accepts either:
+    1. document.cookie string (key=value; key2=value2)
+    2. JSON array from Application > Cookies > Copy as cURL
+    """
+    if not payload.cookie_string or not payload.cookie_string.strip():
+        return {"status": "error", "message": "Cookie 内容不能为空"}
+
+    result = xhs_scraper.import_cookies_from_string(payload.cookie_string.strip())
+    return result
 
 
 @router.post("/cookies/cancel")

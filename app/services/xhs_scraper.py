@@ -59,6 +59,75 @@ def get_cookie_status() -> dict:
     }
 
 
+def import_cookies_from_string(cookie_string: str) -> dict:
+    """
+    Parse and import cookies from various formats:
+    1. document.cookie format: "key1=value1; key2=value2"
+    2. JSON array from DevTools
+    3. Curl format
+    """
+    import json
+    cookies = []
+
+    # Try parsing as JSON first
+    try:
+        data = json.loads(cookie_string)
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and "name" in item and "value" in item:
+                    cookies.append({
+                        "name": item["name"],
+                        "value": item["value"],
+                        "domain": item.get("domain", ".xiaohongshu.com"),
+                        "path": item.get("path", "/"),
+                    })
+            if cookies:
+                save_cookies(cookies)
+                has_session = any(c["name"] == "web_session" for c in cookies)
+                return {
+                    "status": "captured" if has_session else "imported",
+                    "message": f"成功导入 {len(cookies)} 个 Cookie" + (
+                        "" if has_session else "（缺少 web_session，可能无法正常工作）"
+                    ),
+                    "count": len(cookies),
+                }
+    except json.JSONDecodeError:
+        pass
+
+    # Parse as document.cookie format: "key=value; key2=value2"
+    if "=" in cookie_string and ";" in cookie_string:
+        pairs = [p.strip() for p in cookie_string.split(";") if p.strip()]
+        for pair in pairs:
+            if "=" not in pair:
+                continue
+            # Handle multiple "=" in value
+            eq_pos = pair.find("=")
+            name = pair[:eq_pos].strip()
+            value = pair[eq_pos + 1 :].strip()
+            if name:
+                cookies.append(
+                    {
+                        "name": name,
+                        "value": value,
+                        "domain": ".xiaohongshu.com",
+                        "path": "/",
+                    }
+                )
+
+        if cookies:
+            save_cookies(cookies)
+            has_session = any(c["name"] == "web_session" for c in cookies)
+            return {
+                "status": "captured" if has_session else "imported",
+                "message": f"成功导入 {len(cookies)} 个 Cookie" + (
+                    "" if has_session else "（缺少 web_session，可能无法正常工作）"
+                ),
+                "count": len(cookies),
+            }
+
+    return {"status": "error", "message": "无法解析 Cookie 格式，请检查输入内容"}
+
+
 def is_capturing() -> bool:
     return _capture_in_progress
 
