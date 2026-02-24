@@ -35,14 +35,26 @@ def _get_chromium_path() -> Optional[str]:
 
     for pattern in patterns:
         paths = glob.glob(pattern)
-        if paths:
-            return paths[0]
+        for path in paths:
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                print(f"[Playwright] Found Chromium at: {path}")
+                return path
 
     # Check environment variable
     env_path = os.getenv("PLAYWRIGHT_CHROMIUM_PATH")
     if env_path and os.path.exists(env_path):
+        print(f"[Playwright] Using env Chromium: {env_path}")
         return env_path
 
+    # List what's in the cache directory for debugging
+    try:
+        cache_dir = "/opt/render/.cache/ms-playwright"
+        if os.path.exists(cache_dir):
+            print(f"[Playwright] Cache contents: {os.listdir(cache_dir)}")
+    except Exception as e:
+        print(f"[Playwright] Error listing cache: {e}")
+
+    print("[Playwright] No custom Chromium path found, using default")
     return None
 
 # ── Global state for cookie capture ───────────────────────────────────────────
