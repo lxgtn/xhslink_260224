@@ -7,8 +7,12 @@ services:
       pip install -r requirements.txt
       export PLAYWRIGHT_BROWSERS_PATH=/opt/render/.cache/ms-playwright
       python -m playwright install chromium
-      python -m playwright install-deps chromium
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      echo "=== Playwright cache after install ==="
+      ls -la /opt/render/.cache/ms-playwright/ || echo "Cache dir not found"
+    startCommand: |
+      echo "=== Starting service ==="
+      echo "Cache contents: $(ls /opt/render/.cache/ms-playwright/ 2>/dev/null || echo 'empty')"
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
