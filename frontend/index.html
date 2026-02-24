@@ -133,15 +133,31 @@
           <span id="cookie-status-text">检查中…</span>
         </div>
         <div class="btn-row">
-          <button class="btn btn-secondary" id="capture-cookie-btn">获取 Cookie</button>
+          <button class="btn btn-secondary" id="import-cookie-btn">粘贴 Cookie</button>
+          <button class="btn btn-secondary" id="capture-cookie-btn" style="display:none">获取 Cookie</button>
           <button class="btn btn-danger btn-small" id="cancel-cookie-btn"
             style="display:none">取消</button>
         </div>
       </div>
       <p class="hint">
-        点击「获取 Cookie」将弹出小红书网页，在网页中完成登录后，
-        系统自动检测登录状态并保存 Cookie，无需任何手动操作。
+        点击「粘贴 Cookie」，从浏览器开发者工具复制 Cookie 并粘贴。
+        <br>步骤：1）打开小红书网页并登录；2）按 F12 打开开发者工具；
+        3）切换到「Application/应用」标签；4）在左侧找到 Cookies → https://www.xiaohongshu.com；
+        5）右键选择「Copy as cURL」或复制任意 cookie 值，粘贴到下方。
       </p>
+      <div id="cookie-import-area" style="display:none; margin-top:16px;">
+        <div class="form-group">
+          <textarea id="cookie-input" rows="6" placeholder="在此粘贴 Cookie…
+
+支持两种格式：
+1. document.cookie 格式：key1=value1; key2=value2
+2. 开发者工具「Copy as cURL」的 JSON 格式"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="save-cookie-btn">保存 Cookie</button>
+          <button class="btn btn-secondary" id="cancel-import-btn">取消</button>
+        </div>
+      </div>
     </div>
 
   </div>

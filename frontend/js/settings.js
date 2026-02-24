@@ -25,6 +25,9 @@ const Settings = {
     document.getElementById('feishu-test-btn').addEventListener('click', () => this._testFeishu());
     document.getElementById('capture-cookie-btn').addEventListener('click', () => this._captureCookie());
     document.getElementById('cancel-cookie-btn').addEventListener('click', () => this._cancelCapture());
+    document.getElementById('import-cookie-btn').addEventListener('click', () => this._showCookieImport());
+    document.getElementById('cancel-import-btn').addEventListener('click', () => this._hideCookieImport());
+    document.getElementById('save-cookie-btn').addEventListener('click', () => this._saveImportedCookie());
   },
 
   // ── Load / save config ─────────────────────────────────────────
@@ -226,6 +229,54 @@ const Settings = {
       await fetch(this._apiUrl('/api/cookies/cancel'), { method: 'POST' });
     } catch (_) {}
     await this._checkCookieStatus();
+  },
+
+  // ── Import Cookie (manual paste) ─────────────────────────────────
+
+  _showCookieImport() {
+    document.getElementById('cookie-import-area').style.display = 'block';
+    document.getElementById('import-cookie-btn').style.display = 'none';
+    document.getElementById('cookie-input').focus();
+  },
+
+  _hideCookieImport() {
+    document.getElementById('cookie-import-area').style.display = 'none';
+    document.getElementById('import-cookie-btn').style.display = 'inline-flex';
+    document.getElementById('cookie-input').value = '';
+  },
+
+  async _saveImportedCookie() {
+    const cookieString = document.getElementById('cookie-input').value.trim();
+    if (!cookieString) {
+      App.toast('请输入 Cookie 内容', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('save-cookie-btn');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+
+    try {
+      const res = await fetch(this._apiUrl('/api/cookies/import'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookie_string: cookieString }),
+      });
+      const result = await res.json();
+
+      if (result.status === 'error') {
+        App.toast(result.message || '导入失败', 'error');
+      } else {
+        App.toast(result.message, 'success');
+        this._hideCookieImport();
+        this._renderCookieStatus(result);
+      }
+    } catch (e) {
+      App.toast('保存失败：' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '保存 Cookie';
+    }
   },
 
   _stopCookiePoller() {
