@@ -123,11 +123,11 @@ header p {
 }
 /* Primary button - deep brown tone */
 .btn-primary  {
-  background: #614834;
+  background: #6F5744;
   color: #f7f5f2;
 }
 .btn-primary:hover:not(:disabled)  {
-  background: #4e3a2a;
+  background: #7D6655;
 }
 /* Secondary button - lighter text */
 .btn-secondary {
