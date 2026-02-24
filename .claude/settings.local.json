@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0,''.''\\); from config import BASE_DIR; print\\(''OK:'', BASE_DIR\\)\")",
+      "Bash(python \"g:/_drive/projects/xhslink_260224/config.py\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(where python)",
+      "Bash(py --version)",
+      "Bash(py3 --version)",
+      "Bash(/c/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe --version)",
+      "Bash(PYTHON=/c/Users/lexiedeng/AppData/Roaming/uv/python/cpython-3.14.3-windows-x86_64-none/python.exe)",
+      "Bash($PYTHON -c \":*)"
+    ]
+  }
+}
