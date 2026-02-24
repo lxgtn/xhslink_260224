@@ -433,9 +433,9 @@ header p {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  padding: 12px 20px;
+  padding: 8px 16px;
   border-radius: 8px;
-  color: #fff;
+  color: #E6DAD1;
   font-size: 14px;
   font-weight: 500;
   z-index: 9999;
@@ -443,10 +443,10 @@ header p {
   max-width: 400px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
-.toast-success { background: #2e7d32; }
-.toast-error   { background: #c62828; }
-.toast-info    { background: #424242; }
-.toast-warn    { background: #e65100; }
+.toast-success { background: #F6F2EE; }
+.toast-error   { background: #F6F2EE; }
+.toast-info    { background: #F6F2EE; }
+.toast-warn    { background: #F6F2EE; }
 
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
