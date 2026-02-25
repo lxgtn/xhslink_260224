@@ -424,9 +424,11 @@ const Settings = {
       return;
     }
 
-    const btn = document.getElementById('save-cookie-btn');
-    btn.disabled = true;
-    btn.textContent = '保存中…';
+    const btn = document.getElementById('save-cookie-btn-inline');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '保存中…';
+    }
 
     try {
       const res = await fetch(this._apiUrl('/api/cookies/import'), {
@@ -448,8 +450,10 @@ const Settings = {
     } catch (e) {
       App.toast('保存失败：' + e.message, 'error');
     } finally {
-      btn.disabled = false;
-      btn.textContent = '保存 Cookie';
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '保存 Cookie';
+      }
     }
   },
 
