@@ -375,6 +375,30 @@ header p {
   border: 1px solid #eee;
 }
 
+/* Cookie steps list */
+.cookie-steps {
+  padding-left: 20px;
+  margin: 12px 0;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.cookie-steps li {
+  margin-bottom: 6px;
+}
+.cookie-steps code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, monospace;
+  font-size: 12px;
+  color: #333;
+}
+.cookie-steps a {
+  color: #644D3B;
+  text-decoration: underline;
+}
+
 /* External link - subtle style with icon */
 .external-link {
   color: inherit;

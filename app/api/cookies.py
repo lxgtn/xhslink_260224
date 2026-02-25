@@ -71,7 +71,7 @@ async def import_cookies(payload: CookiePayload):
     return result
 
 
-@router.post("/cookies/validate")
+@router.get("/cookies/validate")
 async def validate_cookies():
     """Validate saved cookies by testing them against xiaohongshu.com."""
     return await xhs_scraper.validate_cookies()

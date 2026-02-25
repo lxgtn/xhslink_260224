@@ -128,16 +128,19 @@
     <div class="card">
       <h2>小红书账号 Cookie</h2>
 
-      <!-- Auto capture button -->
       <div class="form-group">
-        <button class="btn btn-primary" id="auto-cookie-btn" style="width: 100%;">🌐 自动获取 Cookie（打开浏览器）</button>
-        <p class="hint" style="margin-top: 8px; margin-bottom: 0;">
-          如果已在浏览器登录小红书，点击上方按钮自动抓取 Cookie。或手动粘贴 Cookie 字符串到下方。
-        </p>
+        <label>Cookie 获取步骤：</label>
+        <ol class="cookie-steps">
+          <li>在电脑上打开 Chrome 浏览器，访问 <a href="https://www.xiaohongshu.com" target="_blank">xiaohongshu.com</a> 并登录</li>
+          <li>按 F12 打开开发者工具 → 切换到 <strong>Network（网络）</strong> 标签</li>
+          <li>刷新页面（F5），点击任意一个请求（如 feed 或 note）</li>
+          <li>在右侧 <strong>Request Headers（请求标头）</strong> 中找到 <code>Cookie:</code> 字段</li>
+          <li>复制完整的 Cookie 字符串（从 <code>Cookie:</code> 后的内容），粘贴到下方输入框</li>
+        </ol>
       </div>
 
       <div class="form-group">
-        <textarea id="cookie-input" rows="4" placeholder="手动粘贴 Cookie：支持完整 Cookie 字符串、Request Header 中的 'Cookie: xxx'、或仅 web_session 值"></textarea>
+        <textarea id="cookie-input" rows="4" placeholder="粘贴 Cookie 字符串：支持完整 Cookie 字符串、Request Header 中的 'Cookie: xxx'、或仅 web_session 值"></textarea>
       </div>
       <!-- Cookie action row: buttons + status -->
       <div class="form-row cookie-action-row">
