@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      PLAYWRIGHT_BROWSERS_PATH=0 python -m playwright install chromium --with-deps
+      PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright python -m playwright install chromium --with-deps
       echo "=== Playwright installed ==="
       echo "=== Current directory: $(pwd) ==="
       echo "=== Directory contents: $(ls -la) ==="
@@ -21,5 +21,5 @@ services:
       - key: PORT
         value: 8000
       - key: PLAYWRIGHT_BROWSERS_PATH
-        value: "0"
+        value: /opt/render/project/src/.playwright
     healthCheckPath: /api/auth/feishu/status

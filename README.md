@@ -22,7 +22,7 @@
 | 前端 | GitHub Pages | 纯静态页面，免费托管 |
 | 后端 | Render | Python FastAPI，支持 Playwright |
 
-**在线访问地址**：`https://<你的用户名>.github.io/xhslink_260224/frontend/`
+**在线访问地址**：`https://lxgtn.github.io/xhslink_260224/frontend/`
 
 ---
 
