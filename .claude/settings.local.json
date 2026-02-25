@@ -71,7 +71,16 @@
       "Bash(git add -A)",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xhs_scraper.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\(''app/services/xhs_scraper.py'', encoding=''utf-8''\\).read\\(\\)\\)\")",
-      "Bash(python3 -m py_compile app/services/xhs_scraper.py)"
+      "Bash(python3 -m py_compile app/services/xhs_scraper.py)",
+      "Bash(git merge master)",
+      "Bash(git add frontend/css/style.css frontend/index.html)",
+      "Bash(git add app/api/cookies.py app/services/xhs_scraper.py frontend/js/settings.js)",
+      "Bash(git add frontend/js/settings.js)",
+      "Bash(git add frontend/css/style.js)",
+      "Bash(git add app/services/xhs_scraper.py render.yaml)",
+      "Bash(git add render.yaml)",
+      "Bash(git add app/api/config_api.py)",
+      "Bash(git add app/services/xhs_scraper.py)"
     ]
   }
 }
