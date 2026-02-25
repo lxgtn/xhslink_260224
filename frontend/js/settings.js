@@ -16,7 +16,6 @@ const Settings = {
     await this._checkCookieStatus();
     this._bindEvents();
     this._setupFormPersistence();
-    this._updateFeishuSheetLink(); // Update sheet link on init
   },
 
   async refresh() {
@@ -27,7 +26,6 @@ const Settings = {
     }
     await this._checkFeishuStatus();
     await this._checkCookieStatus();
-    this._updateFeishuSheetLink();
   },
 
   // ── Form persistence using sessionStorage ─────────────────────────
@@ -60,37 +58,33 @@ const Settings = {
     });
   },
 
-  _getSheetsBaseUrl() {
-    // Extract base URL from sheets ID format
-    // Feishu sheets URL: https://www.feishu.cn/base/<base_token>?table=<table_id>
-    const sheetsId = document.getElementById('sheets-id').value.trim();
-    if (!sheetsId) return null;
-    // Try to construct the base URL
-    // If sheetsId contains the full URL, extract the base part
-    if (sheetsId.startsWith('http')) {
-      try {
-        const url = new URL(sheetsId);
-        return url.origin + url.pathname + url.search;
-      } catch (_) {
-        return null;
+  _extractSpreadsheetToken(urlOrToken) {
+    // Extract spreadsheet token from full Feishu URL or return as-is if already token
+    // Supported formats:
+    // - https://xxx.feishu.cn/wiki/AbCdEfGh12345678
+    // - https://xxx.feishu.cn/base/AbCdEfGh12345678
+    // - AbCdEfGh12345678 (direct token)
+    const trimmed = urlOrToken.trim();
+    if (!trimmed) return '';
+
+    // If it's already just a token (no slashes, no protocol), return as-is
+    if (!trimmed.includes('/') && !trimmed.includes(':')) {
+      return trimmed;
+    }
+
+    // Try to extract token from URL
+    try {
+      const url = new URL(trimmed);
+      // Match /wiki/xxx or /base/xxx patterns
+      const match = url.pathname.match(/\/(?:wiki|base)\/([a-zA-Z0-9_-]+)/);
+      if (match) {
+        return match[1];
       }
+    } catch (_) {
+      // Not a valid URL, return as-is for backward compatibility
     }
-    // If it's just the ID, construct the URL
-    return `https://www.feishu.cn/base/${sheetsId}`;
-  },
 
-  _updateFeishuSheetLink() {
-    const linkContainer = document.getElementById('feishu-sheet-link');
-    if (!linkContainer) return;
-
-    const sheetsId = document.getElementById('sheets-id').value.trim();
-    if (sheetsId) {
-      const baseUrl = sheetsId.startsWith('http') ? sheetsId : `https://www.feishu.cn/base/${sheetsId}`;
-      linkContainer.innerHTML = `<a href="${baseUrl}" target="_blank" class="sheet-link">打开多维表格 <span class="arrow-icon">→</span></a>`;
-      linkContainer.style.display = 'inline-block';
-    } else {
-      linkContainer.style.display = 'none';
-    }
+    return trimmed;
   },
 
   _bindEvents() {
@@ -144,9 +138,6 @@ const Settings = {
       } else {
         secretHint.style.display = 'none';
       }
-
-      // Update sheet link after loading config
-      this._updateFeishuSheetLink();
     } catch (_) {}
   },
 
@@ -179,11 +170,17 @@ const Settings = {
 
   async _saveFeishu() {
     const payload = {};
-    const sheetsId = document.getElementById('sheets-id').value.trim();
+    const sheetsUrl = document.getElementById('sheets-id').value.trim();
     const appId = document.getElementById('feishu-app-id').value.trim();
     const secret = document.getElementById('feishu-app-secret').value.trim();
 
-    if (sheetsId) payload.sheets_id = sheetsId;
+    // Extract spreadsheet token from URL (or use as-is if already token)
+    if (sheetsUrl) {
+      const token = this._extractSpreadsheetToken(sheetsUrl);
+      if (token) {
+        payload.sheets_id = token;
+      }
+    }
     if (appId) payload.feishu_app_id = appId;
     if (secret) payload.feishu_app_secret = secret;
 
@@ -197,9 +194,6 @@ const Settings = {
     ['sheets-id', 'feishu-app-id', 'feishu-app-secret'].forEach(key => {
       sessionStorage.removeItem('form_' + key);
     });
-
-    // Update the sheet link display
-    this._updateFeishuSheetLink();
 
     App.toast('飞书配置已保存', 'success');
     await this._loadConfig();

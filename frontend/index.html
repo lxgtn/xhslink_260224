@@ -93,9 +93,9 @@
     <div class="card">
       <h2>飞书多维表格</h2>
       <div class="form-group">
-        <label>多维表格 ID <small>（URL 中间的字母数字串）</small></label>
+        <label>表格 URL <small>（格式：xxx.feishu.cn/wiki/xxxxx）</small></label>
         <input type="text" id="sheets-id"
-          placeholder="例：Qwerty1234567890abcd" />
+          placeholder="例：https://xxxxx.feishu.cn/wiki/AbCdEfGh12345678" />
       </div>
       <div class="form-group">
         <label>飞书 App ID</label>
@@ -115,9 +115,8 @@
           <span id="feishu-status-text">检查中…</span>
         </div>
       </div>
-      <div class="btn-row btn-row-spaced">
+      <div class="btn-row">
         <button class="btn btn-primary" id="save-feishu-btn">保存飞书配置</button>
-        <span id="feishu-sheet-link" class="sheet-link-container" style="display:none;"></span>
       </div>
       <p class="hint">
         需要在 <a href="https://open.feishu.cn/app/" target="_blank" class="external-link">飞书开放平台 ↗</a> 创建企业自建应用，启用「多维表格」权限后获取 App ID 和 App Secret。
