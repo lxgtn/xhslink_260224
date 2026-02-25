@@ -33,7 +33,7 @@ async def start_workflow() -> str:
 
     sheets_id = cfg.get("sheets_id", "").strip()
     if not sheets_id:
-        raise RuntimeError("请先在设置页面填写并保存飞书多维表格 ID")
+        raise RuntimeError("请先在设置页面填写并保存飞书文档库表格 ID")
 
     # Check Feishu credentials
     feishu_app_id = cfg.get("feishu_app_id", "").strip()
@@ -69,13 +69,13 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
     failed_count = 0
 
     try:
-        await sse.emit(run_id, "info", "🚀 开始读取飞书多维表格...")
+        await sse.emit(run_id, "info", "🚀 开始读取飞书文档库表格...")
 
         # F1: read pending rows
         try:
             pending = await sheets_service.get_pending_rows(sheets_id)
         except Exception as e:
-            await sse.emit(run_id, "error", f"❌ 读取飞书多维表格失败：{e}")
+            await sse.emit(run_id, "error", f"❌ 读取飞书文档库表格失败：{e}")
             await db.complete_run(run_id, "failed")
             await sse.close_stream(run_id)
             return
@@ -136,7 +136,7 @@ async def _run(run_id: str, sheets_id: str, ai_cfg: AIConfig, xhs_cookies: list)
                 await sse.emit(run_id, "info", "  ✓ 内容总结生成完成")
 
                 # F8: Write back
-                await sse.emit(run_id, "info", "  → 写入飞书多维表格...")
+                await sse.emit(run_id, "info", "  → 写入飞书文档库表格...")
                 row_data = {
                     "title": note.get("title", "0"),
                     "author": note.get("author", "0"),

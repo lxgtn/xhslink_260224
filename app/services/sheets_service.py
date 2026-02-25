@@ -72,7 +72,7 @@ async def _get_sheet_id(token: str, spreadsheet_token: str) -> str:
         if resp.status_code == 400:
             error_data = resp.json() if resp.text else {}
             error_msg = error_data.get("msg", "请求参数错误")
-            raise RuntimeError(f"访问多维表格失败: {error_msg}（请确认: 1.表格ID正确 2.应用已发布或表格已分享给应用）")
+            raise RuntimeError(f"访问文档库表格失败: {error_msg}（请确认: 1.表格ID正确 2.应用已发布或表格已分享给应用）")
         resp.raise_for_status()
         data = resp.json()
 
@@ -82,7 +82,7 @@ async def _get_sheet_id(token: str, spreadsheet_token: str) -> str:
         if "permission" in error_msg.lower() or "access" in error_msg.lower():
             error_msg += "（请检查：1.应用是否已发布 2.表格是否已分享给应用所在企业）"
         elif "not found" in error_msg.lower() or "exist" in error_msg.lower():
-            error_msg += "（请检查多维表格ID是否正确）"
+            error_msg += "（请检查文档库表格ID是否正确）"
         raise RuntimeError(f"获取工作表失败: {error_msg}")
 
     sheets = data.get("data", {}).get("sheets", [])
