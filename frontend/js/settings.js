@@ -392,6 +392,13 @@ const Settings = {
       if (result.status === 'capturing') {
         App.toast(result.message, 'info', 8000);
         this._pollCookieCaptureStatus(btn, originalText);
+      } else if (result.status === 'error' && result.env === 'headless') {
+        // Server environment doesn't support visible browser
+        App.toast(result.message, 'warn', 6000);
+        btn.disabled = false;
+        btn.textContent = originalText;
+        // Focus the textarea to guide user to manual paste
+        document.getElementById('cookie-input').focus();
       } else {
         App.toast(result.message || '启动失败', 'error');
         btn.disabled = false;

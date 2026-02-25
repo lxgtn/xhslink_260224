@@ -298,15 +298,29 @@ async def capture_cookies_async():
     """
     global _capture_browser, _capture_in_progress
     if _capture_in_progress:
+        print("[CookieCapture] Already in progress, skipping")
         return
 
     _capture_in_progress = True
+    print("[CookieCapture] Starting cookie capture...")
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=False,
-                args=["--start-maximized"],
-            )
+            # Try to launch browser with visible window first
+            try:
+                print("[CookieCapture] Attempting to launch visible browser...")
+                browser = await p.chromium.launch(
+                    headless=False,
+                    args=["--start-maximized"],
+                )
+                print("[CookieCapture] Visible browser launched successfully")
+            except Exception as e:
+                print(f"[CookieCapture] Failed to launch visible browser: {e}")
+                print("[CookieCapture] Server environment detected, cannot open visible browser")
+                # In server environment, we can't open visible browser
+                # Save error state that frontend can check
+                _capture_in_progress = False
+                return
+
             _capture_browser = browser
             context = await browser.new_context(
                 viewport={"width": 1280, "height": 800},
@@ -317,24 +331,33 @@ async def capture_cookies_async():
                 ),
             )
             page = await context.new_page()
+            print("[CookieCapture] Navigating to xiaohongshu.com...")
             await page.goto("https://www.xiaohongshu.com")
+            print("[CookieCapture] Page loaded, waiting for login...")
 
             # Poll for up to 5 minutes
-            for _ in range(150):
+            for i in range(150):
                 if _capture_browser is None:
+                    print("[CookieCapture] Capture cancelled")
                     break  # cancelled
                 await asyncio.sleep(2)
                 cookies = await context.cookies("https://www.xiaohongshu.com")
                 if any(c["name"] == "web_session" for c in cookies):
                     save_cookies(cookies)
+                    print(f"[CookieCapture] Cookie captured successfully! ({len(cookies)} cookies)")
                     break
+                if i % 10 == 0:  # Log every 20 seconds
+                    print(f"[CookieCapture] Still waiting for login... ({i*2}s)")
 
             await browser.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[CookieCapture] Error during capture: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         _capture_browser = None
         _capture_in_progress = False
+        print("[CookieCapture] Capture ended")
 
 
 async def cancel_capture():

@@ -20,8 +20,26 @@ async def cookie_status():
 
 @router.post("/cookies/capture")
 async def capture_cookies(background_tasks: BackgroundTasks):
+    """
+    Opens a browser window for user to log in and capture cookies.
+    Note: This requires a desktop environment and won't work on headless servers.
+    """
+    import os
+
+    # Check if running in a headless/server environment
+    display = os.environ.get("DISPLAY")
+    is_headless = not display or os.environ.get("RENDER", "") == "true"
+
+    if is_headless:
+        return {
+            "status": "error",
+            "message": "服务器环境无法打开浏览器窗口，请使用下方输入框手动粘贴 Cookie",
+            "env": "headless"
+        }
+
     if xhs_scraper.is_capturing():
         return {"status": "capturing", "message": "已在获取中，请等待浏览器窗口出现"}
+
     background_tasks.add_task(xhs_scraper.capture_cookies_async)
     return {
         "status": "capturing",
