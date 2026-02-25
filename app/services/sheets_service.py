@@ -265,7 +265,7 @@ async def write_row(spreadsheet_token: str, row_index: int, data: dict):
 
     # Batch update all fields
     for col_letter, val in updates:
-        range_str = f"{sheet_id}!{col_letter}{row_index}"
+        range_str = f"{sheet_id}!{col_letter}{row_index}:{col_letter}{row_index}"
         async with httpx.AsyncClient() as client:
             resp = await client.put(
                 f"{FEISHU_BASE}/sheets/v2/spreadsheets/{spreadsheet_token}/values",
@@ -307,7 +307,7 @@ async def update_status(
         updates.append((col_letter, str(error)[:500]))
 
     for col_letter, val in updates:
-        range_str = f"{sheet_id}!{col_letter}{row_index}"
+        range_str = f"{sheet_id}!{col_letter}{row_index}:{col_letter}{row_index}"
         async with httpx.AsyncClient() as client:
             resp = await client.put(
                 f"{FEISHU_BASE}/sheets/v2/spreadsheets/{spreadsheet_token}/values",
