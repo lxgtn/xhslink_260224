@@ -203,24 +203,39 @@ const Settings = {
   // ── Feishu Connection ──────────────────────────────────────────
 
   async _checkFeishuStatus() {
+    const testBtn = document.getElementById('feishu-test-btn');
+    const statusContainer = document.getElementById('feishu-status-container');
+    const dot = document.getElementById('feishu-status-dot');
+    const text = document.getElementById('feishu-status-text');
+
+    // Check if we have saved credentials
+    const hasCredentials = document.getElementById('feishu-app-id').value.trim() &&
+                          document.getElementById('feishu-app-secret').value.trim();
+
+    // Show/hide test button and status based on whether credentials exist
+    if (hasCredentials) {
+      testBtn.style.display = 'inline-flex';
+      statusContainer.style.display = 'flex';
+    } else {
+      testBtn.style.display = 'none';
+      statusContainer.style.display = 'none';
+      return; // Don't check status if no credentials
+    }
+
     try {
       const status = await fetch(this._apiUrl('/api/auth/feishu/status')).then(r => r.json());
-      const dot  = document.getElementById('feishu-status-dot');
-      const text = document.getElementById('feishu-status-text');
 
       if (status.status === 'authorized') {
-        dot.className  = 'status-dot success';
+        dot.className = 'status-dot success';
         text.textContent = '连接正常';
       } else if (status.status === 'no_credentials') {
-        dot.className  = 'status-dot idle';
+        dot.className = 'status-dot idle';
         text.textContent = '未配置';
       } else {
-        dot.className  = 'status-dot error';
+        dot.className = 'status-dot error';
         text.textContent = '连接失败';
       }
     } catch (_) {
-      const dot = document.getElementById('feishu-status-dot');
-      const text = document.getElementById('feishu-status-text');
       dot.className = 'status-dot error';
       text.textContent = '检查失败';
     }
@@ -341,14 +356,63 @@ const Settings = {
   // ── Import Cookie (manual paste) ─────────────────────────────────
 
   _showCookieImport() {
-    document.getElementById('cookie-import-area').style.display = 'block';
-    document.getElementById('import-cookie-btn').style.display = 'none';
+    const importArea = document.getElementById('cookie-import-area');
+    const pasteGuide = document.getElementById('cookie-paste-guide');
+    const btnContainer = document.getElementById('cookie-btn-container');
+    const importBtn = document.getElementById('import-cookie-btn');
+
+    // Hide the paste guide and original paste button
+    pasteGuide.style.display = 'none';
+    importBtn.style.display = 'none';
+
+    // Create save and cancel buttons if not exist
+    let saveBtn = document.getElementById('save-cookie-btn-inline');
+    let cancelBtn = document.getElementById('cancel-import-btn-inline');
+
+    if (!saveBtn) {
+      saveBtn = document.createElement('button');
+      saveBtn.id = 'save-cookie-btn-inline';
+      saveBtn.className = 'btn btn-primary';
+      saveBtn.textContent = '保存 Cookie';
+      saveBtn.addEventListener('click', () => this._saveImportedCookie());
+    }
+
+    if (!cancelBtn) {
+      cancelBtn = document.createElement('button');
+      cancelBtn.id = 'cancel-import-btn-inline';
+      cancelBtn.className = 'btn btn-secondary';
+      cancelBtn.textContent = '取消';
+      cancelBtn.addEventListener('click', () => this._hideCookieImport());
+    }
+
+    // Add buttons to container
+    btnContainer.appendChild(saveBtn);
+    btnContainer.appendChild(cancelBtn);
+
+    // Show input area
+    importArea.style.display = 'block';
     document.getElementById('cookie-input').focus();
   },
 
   _hideCookieImport() {
-    document.getElementById('cookie-import-area').style.display = 'none';
-    document.getElementById('import-cookie-btn').style.display = 'inline-flex';
+    const importArea = document.getElementById('cookie-import-area');
+    const pasteGuide = document.getElementById('cookie-paste-guide');
+    const importBtn = document.getElementById('import-cookie-btn');
+    const saveBtn = document.getElementById('save-cookie-btn-inline');
+    const cancelBtn = document.getElementById('cancel-import-btn-inline');
+
+    // Hide input area
+    importArea.style.display = 'none';
+
+    // Remove inline buttons
+    if (saveBtn) saveBtn.remove();
+    if (cancelBtn) cancelBtn.remove();
+
+    // Show original paste button and guide
+    importBtn.style.display = 'inline-flex';
+    pasteGuide.style.display = 'block';
+
+    // Clear input
     document.getElementById('cookie-input').value = '';
     sessionStorage.removeItem('form_cookie-input');
   },

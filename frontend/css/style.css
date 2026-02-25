@@ -331,13 +331,30 @@ header p {
   min-height: 80px;
 }
 
-.form-row {
+/* Feishu action row - buttons and status on same line */
+.feishu-action-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+/* Cookie action row - buttons and status on same line */
+.cookie-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+/* Ensure buttons have same height */
+.feishu-action-row .btn {
+  height: 40px;
+  padding: 0 20px;
 }
 .status-label {
   display: flex;

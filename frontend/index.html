@@ -108,15 +108,16 @@
           placeholder="输入 App Secret…" autocomplete="off" />
         <p id="feishu-secret-hint" class="hint" style="display:none"></p>
       </div>
-      <div class="form-row">
-        <button class="btn btn-secondary" id="feishu-test-btn">测试连接</button>
-        <div class="status-label">
+      <!-- Feishu action row: save button + test button (conditional) + status (conditional) -->
+      <div class="form-row feishu-action-row">
+        <div class="btn-row">
+          <button class="btn btn-primary" id="save-feishu-btn">保存飞书配置</button>
+          <button class="btn btn-secondary" id="feishu-test-btn" style="display:none">测试连接</button>
+        </div>
+        <div class="status-label" id="feishu-status-container" style="display:none">
           <span class="status-dot idle" id="feishu-status-dot"></span>
           <span id="feishu-status-text">检查中…</span>
         </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" id="save-feishu-btn">保存飞书配置</button>
       </div>
       <p class="hint">
         需要在 <a href="https://open.feishu.cn/app/" target="_blank" class="external-link">飞书开放平台 ↗</a> 创建企业自建应用，打开应用详情，进入"凭证与基础信息"，找到"应用凭证"一栏，获取 App ID 和 App Secret。
@@ -126,20 +127,22 @@
     <!-- 小红书 Cookie -->
     <div class="card">
       <h2>小红书账号 Cookie</h2>
-      <div class="form-row">
-        <div class="btn-row">
+      <!-- Cookie action row: buttons + status -->
+      <div class="form-row cookie-action-row">
+        <div class="btn-row" id="cookie-btn-container">
           <button class="btn btn-secondary" id="import-cookie-btn">粘贴 Cookie</button>
           <button class="btn btn-secondary" id="capture-cookie-btn" style="display:none">获取 Cookie</button>
           <button class="btn btn-danger btn-small" id="cancel-cookie-btn"
             style="display:none">取消</button>
+          <!-- Save/Cancel buttons will be moved here when paste is clicked -->
         </div>
         <div class="status-label">
           <span class="status-dot idle" id="cookie-status-dot"></span>
           <span id="cookie-status-text">检查中…</span>
         </div>
       </div>
-      <!-- Cookie 输入区域 - 点击"粘贴 Cookie"后显示，位于提示文字上方 -->
-      <div id="cookie-import-area" style="display:none; margin-bottom:16px;">
+      <!-- Cookie 输入区域 - 点击"粘贴 Cookie"后显示，位于按钮下方 -->
+      <div id="cookie-import-area" style="display:none; margin-top:16px;">
         <div class="form-group">
           <textarea id="cookie-input" rows="6" placeholder="在此粘贴 Cookie…
 
@@ -147,12 +150,9 @@
 1. document.cookie 格式：key1=value1; key2=value2
 2. 开发者工具「Copy as cURL」的 JSON 格式"></textarea>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="save-cookie-btn">保存 Cookie</button>
-          <button class="btn btn-secondary" id="cancel-import-btn">取消</button>
-        </div>
       </div>
-      <p class="hint">
+      <!-- Cookie paste guide - shown at bottom -->
+      <p id="cookie-paste-guide" class="hint">
         点击「粘贴 Cookie」，从浏览器开发者工具复制 Cookie 并粘贴。
         <br>步骤：1）打开小红书网页并登录；2）按 F12 或右键「检查」打开开发者工具；
         3）切换到「Network/网络」标签；4）点击任意一项请求；
