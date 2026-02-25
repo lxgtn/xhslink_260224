@@ -22,7 +22,7 @@ async def _ensure_playwright_browser():
         return
     print("[Startup] Playwright browser not found, installing chromium...")
     proc = await asyncio.create_subprocess_exec(
-        sys.executable, "-m", "playwright", "install", "chromium", "--with-deps",
+        sys.executable, "-m", "playwright", "install", "chromium",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

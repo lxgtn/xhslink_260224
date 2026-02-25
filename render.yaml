@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright python -m playwright install chromium --with-deps
+      PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright python -m playwright install chromium
       echo "=== Playwright installed ==="
       echo "=== Current directory: $(pwd) ==="
       echo "=== Directory contents: $(ls -la) ==="
