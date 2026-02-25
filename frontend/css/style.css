@@ -370,7 +370,7 @@ header p {
 
 /* Sheet link - subtle inline style */
 .sheet-link-container {
-  margin-left: 12px;
+  /* margin-left is handled by parent layout */
 }
 .sheet-link {
   color: #888;
@@ -394,6 +394,17 @@ header p {
   display: flex;
   gap: 10px;
   margin-top: 8px;
+}
+
+/* Spaced variant: push items to opposite sides */
+.btn-row-spaced {
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Align sheet link to the right */
+.btn-row-spaced .sheet-link-container {
+  margin-left: auto;
 }
 
 /* ── History ──────────────────────────────────────────────────── */
