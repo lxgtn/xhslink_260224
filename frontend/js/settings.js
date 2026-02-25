@@ -92,6 +92,7 @@ const Settings = {
     document.getElementById('save-cookie-btn').addEventListener('click', () => this._saveCookie());
     document.getElementById('clear-cookie-btn').addEventListener('click', () => this._clearCookie());
     document.getElementById('test-cookie-btn').addEventListener('click', () => this._testCookie());
+    document.getElementById('auto-cookie-btn').addEventListener('click', () => this._autoCaptureCookie());
   },
 
   // ── Load / save config ─────────────────────────────────────────
@@ -374,5 +375,76 @@ const Settings = {
       btn.disabled = false;
       btn.textContent = originalText;
     }
+  },
+
+  // ── Auto capture cookie from browser ──────────────────────────
+
+  async _autoCaptureCookie() {
+    const btn = document.getElementById('auto-cookie-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '正在打开浏览器…';
+
+    try {
+      const res = await fetch(this._apiUrl('/api/cookies/capture'), { method: 'POST' });
+      const result = await res.json();
+
+      if (result.status === 'capturing') {
+        App.toast(result.message, 'info', 8000);
+        this._pollCookieCaptureStatus(btn, originalText);
+      } else {
+        App.toast(result.message || '启动失败', 'error');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    } catch (e) {
+      App.toast('启动失败：' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  },
+
+  _cookiePoller: null,
+
+  _pollCookieCaptureStatus(btn, originalText) {
+    // Poll for cookie status every 2 seconds
+    this._cookiePoller = setInterval(async () => {
+      try {
+        const status = await fetch(this._apiUrl('/api/cookies/status')).then(r => r.json());
+
+        if (status.status === 'captured') {
+          // Cookie captured successfully
+          clearInterval(this._cookiePoller);
+          this._cookiePoller = null;
+
+          // Update UI
+          this._renderCookieStatus(status);
+          btn.disabled = false;
+          btn.textContent = originalText;
+
+          // Load the captured cookie into textarea
+          const raw = await fetch(this._apiUrl('/api/cookies/raw')).then(r => r.json());
+          if (raw.cookie_string) {
+            document.getElementById('cookie-input').value = raw.cookie_string;
+          }
+
+          App.toast('Cookie 自动获取成功！', 'success');
+        }
+        // If still capturing, continue polling
+      } catch (_) {
+        // Ignore errors during polling
+      }
+    }, 2000);
+
+    // Stop polling after 5 minutes (timeout)
+    setTimeout(() => {
+      if (this._cookiePoller) {
+        clearInterval(this._cookiePoller);
+        this._cookiePoller = null;
+        btn.disabled = false;
+        btn.textContent = originalText;
+        App.toast('Cookie 获取超时，请重试或使用手动粘贴', 'warn');
+      }
+    }, 300000); // 5 minutes
   },
 };

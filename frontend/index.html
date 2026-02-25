@@ -127,11 +127,17 @@
     <!-- 小红书 Cookie -->
     <div class="card">
       <h2>小红书账号 Cookie</h2>
-      <p class="hint">
-        支持多种格式：完整的 Cookie 字符串、Request Header 中的 "Cookie: xxx"、或仅 web_session 值。
-      </p>
+
+      <!-- Auto capture button -->
       <div class="form-group">
-        <textarea id="cookie-input" rows="4" placeholder="获取Cookie：1）打开小红书网页并登录；2）F12打开开发者工具 → Network/网络；3）刷新页面，点击任意请求；4）Headers/标头中找到 Cookie；5）复制粘贴此处"></textarea>
+        <button class="btn btn-primary" id="auto-cookie-btn" style="width: 100%;">🌐 自动获取 Cookie（打开浏览器）</button>
+        <p class="hint" style="margin-top: 8px; margin-bottom: 0;">
+          如果已在浏览器登录小红书，点击上方按钮自动抓取 Cookie。或手动粘贴 Cookie 字符串到下方。
+        </p>
+      </div>
+
+      <div class="form-group">
+        <textarea id="cookie-input" rows="4" placeholder="手动粘贴 Cookie：支持完整 Cookie 字符串、Request Header 中的 'Cookie: xxx'、或仅 web_session 值"></textarea>
       </div>
       <!-- Cookie action row: buttons + status -->
       <div class="form-row cookie-action-row">
