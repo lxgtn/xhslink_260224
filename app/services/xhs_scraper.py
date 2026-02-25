@@ -27,8 +27,16 @@ def _get_chromium_path() -> Optional[str]:
     """Find Chromium executable on Render or other environments."""
     import glob
 
-    # When PLAYWRIGHT_BROWSERS_PATH=0, browsers are installed in project directory
-    # Check local playwright directory first (for Render with PLAYWRIGHT_BROWSERS_PATH=0)
+    # Dynamic patterns based on PLAYWRIGHT_BROWSERS_PATH env var
+    pw_path = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
+    dynamic_patterns = []
+    if pw_path and pw_path not in ("0", ""):
+        dynamic_patterns = [
+            f"{pw_path}/chromium-*/chrome-linux/chrome",
+            f"{pw_path}/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
+        ]
+
+    # Check local playwright directory
     local_patterns = [
         "./.playwright/chromium-*/chrome-linux/chrome",
         "./.playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell",
@@ -44,7 +52,7 @@ def _get_chromium_path() -> Optional[str]:
         os.path.expanduser("~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell"),
     ]
 
-    all_patterns = local_patterns + cache_patterns
+    all_patterns = dynamic_patterns + local_patterns + cache_patterns
 
     for pattern in all_patterns:
         paths = glob.glob(pattern)

@@ -1,3 +1,5 @@
+import asyncio
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,8 +14,28 @@ from app.api import auth, config_api, cookies, history, logs, workflow
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
 
+async def _ensure_playwright_browser():
+    """Ensure Chromium is installed; auto-install if missing."""
+    from app.services.xhs_scraper import _get_chromium_path
+    if _get_chromium_path() is not None:
+        print("[Startup] Playwright browser found, skipping install.")
+        return
+    print("[Startup] Playwright browser not found, installing chromium...")
+    proc = await asyncio.create_subprocess_exec(
+        sys.executable, "-m", "playwright", "install", "chromium", "--with-deps",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode == 0:
+        print("[Startup] Chromium installed successfully.")
+    else:
+        print(f"[Startup] Chromium install failed:\n{stderr.decode()}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _ensure_playwright_browser()
     await init_db()
     yield
     await close_db()
