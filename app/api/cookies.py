@@ -33,15 +33,30 @@ async def capture_cookies(background_tasks: BackgroundTasks):
 async def import_cookies(payload: CookiePayload):
     """
     Import cookies from browser console.
-    Accepts either:
+    Accepts:
     1. document.cookie string (key=value; key2=value2)
-    2. JSON array from Application > Cookies > Copy as cURL
+    2. JSON array from Application > Cookies
+    3. Request Header "Cookie: xxx" format
+    4. Just the web_session token value
     """
     if not payload.cookie_string or not payload.cookie_string.strip():
         return {"status": "error", "message": "Cookie 内容不能为空"}
 
     result = xhs_scraper.import_cookies_from_string(payload.cookie_string.strip())
+
+    # If import successful, validate the cookies
+    if result["status"] in ("captured", "imported"):
+        validation = await xhs_scraper.validate_cookies()
+        if not validation["valid"]:
+            result["warning"] = validation["message"]
+
     return result
+
+
+@router.post("/cookies/validate")
+async def validate_cookies():
+    """Validate saved cookies by testing them against xiaohongshu.com."""
+    return await xhs_scraper.validate_cookies()
 
 
 @router.post("/cookies/cancel")

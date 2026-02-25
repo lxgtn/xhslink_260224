@@ -127,14 +127,18 @@
     <!-- 小红书 Cookie -->
     <div class="card">
       <h2>小红书账号 Cookie</h2>
+      <p class="hint">
+        支持多种格式：完整的 Cookie 字符串、Request Header 中的 "Cookie: xxx"、或仅 web_session 值。
+      </p>
       <div class="form-group">
-        <textarea id="cookie-input" rows="6" placeholder="获取Cookie步骤：1）打开小红书网页并登录；2）键盘F12或鼠标右键“Inspect/检查”打开开发者工具；3）切换到“Network/网络”页签；4）点击左侧栏任意一项请求；5）在右侧面板中点击“Headers/标头”，在“Request Headers/请求标头”栏目中找到Cookie；6）复制完整的Cookie字符串，粘贴在此处，然后保存。"></textarea>
+        <textarea id="cookie-input" rows="4" placeholder="获取Cookie：1）打开小红书网页并登录；2）F12打开开发者工具 → Network/网络；3）刷新页面，点击任意请求；4）Headers/标头中找到 Cookie；5）复制粘贴此处"></textarea>
       </div>
       <!-- Cookie action row: buttons + status -->
       <div class="form-row cookie-action-row">
         <div class="btn-row">
           <button class="btn btn-primary" id="save-cookie-btn">保存 Cookie</button>
-          <button class="btn btn-secondary" id="cancel-cookie-btn">清空</button>
+          <button class="btn btn-secondary" id="clear-cookie-btn">清空</button>
+          <button class="btn btn-secondary" id="test-cookie-btn">验证 Cookie</button>
         </div>
         <div class="status-label">
           <span class="status-dot idle" id="cookie-status-dot"></span>

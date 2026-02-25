@@ -135,18 +135,66 @@ def get_cookie_status() -> dict:
     }
 
 
+async def validate_cookies() -> dict:
+    """
+    Validate saved cookies by attempting to access xiaohongshu.com.
+    Returns status indicating if cookies are valid.
+    """
+    cookies = load_cookies()
+    if not cookies:
+        return {"valid": False, "message": "未找到 Cookie"}
+
+    try:
+        async with async_playwright() as p:
+            chromium_path = _get_chromium_path()
+            launch_options = {
+                "headless": True,
+                "args": ["--no-sandbox", "--disable-setuid-sandbox"],
+            }
+            if chromium_path:
+                launch_options["executable_path"] = chromium_path
+
+            browser = await p.chromium.launch(**launch_options)
+            context = await browser.new_context()
+            await context.add_cookies(cookies)
+            page = await context.new_page()
+
+            # Try to access a test page
+            await page.goto("https://www.xiaohongshu.com", timeout=10000)
+
+            # Check if we're still logged in by looking for web_session
+            current_cookies = await context.cookies("https://www.xiaohongshu.com")
+            await browser.close()
+
+            has_session = any(c["name"] == "web_session" for c in current_cookies)
+            if has_session:
+                return {"valid": True, "message": "Cookie 有效"}
+            else:
+                return {"valid": False, "message": "Cookie 已过期或无效"}
+
+    except Exception as e:
+        return {"valid": False, "message": f"验证失败: {str(e)}"}
+
+
 def import_cookies_from_string(cookie_string: str) -> dict:
     """
     Parse and import cookies from various formats:
     1. document.cookie format: "key1=value1; key2=value2"
-    2. JSON array from DevTools
-    3. Curl format
+    2. JSON array from DevTools > Application > Cookies
+    3. Request Header format: "Cookie: key1=value1; key2=value2"
+    4. Single web_session value (just the token)
     """
     import json
+    import re
+
     cookies = []
+    original_input = cookie_string
 
     # Save raw string for auto-fill (even if parsing fails, user can edit and retry)
     save_cookie_raw_string(cookie_string)
+
+    # Clean up the input
+    cookie_string = cookie_string.strip()
 
     # Try parsing as JSON first
     try:
@@ -173,8 +221,34 @@ def import_cookies_from_string(cookie_string: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Parse as document.cookie format: "key=value; key2=value2"
-    if "=" in cookie_string and ";" in cookie_string:
+    # Check if it's a "Cookie:" header format (from Request Headers)
+    # Format: "Cookie: web_session=xxx; webId=xxx" or just the content after "Cookie: "
+    if cookie_string.lower().startswith("cookie:"):
+        cookie_string = cookie_string[7:].strip()  # Remove "Cookie: " prefix
+
+    # Check if it looks like key=value pairs
+    if "=" in cookie_string:
+        # Check if it's a single web_session value (no semicolons, just a token)
+        if ";" not in cookie_string and len(cookie_string) < 200:
+            # Might be just the web_session token
+            potential_name = cookie_string.split("=")[0].strip()
+            # If it looks like just a value without key= prefix
+            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', potential_name):
+                # Treat entire string as web_session value
+                cookies.append({
+                    "name": "web_session",
+                    "value": cookie_string.strip(),
+                    "domain": ".xiaohongshu.com",
+                    "path": "/",
+                })
+                save_cookies(cookies)
+                return {
+                    "status": "captured",
+                    "message": "已导入 web_session Cookie",
+                    "count": 1,
+                }
+
+        # Parse as key=value; key2=value2 format
         pairs = [p.strip() for p in cookie_string.split(";") if p.strip()]
         for pair in pairs:
             if "=" not in pair:
@@ -183,7 +257,10 @@ def import_cookies_from_string(cookie_string: str) -> dict:
             eq_pos = pair.find("=")
             name = pair[:eq_pos].strip()
             value = pair[eq_pos + 1 :].strip()
-            if name:
+            # Remove any trailing attributes like "Path=/", "HttpOnly", etc.
+            if " " in name:
+                continue  # Skip invalid names
+            if name and not name.lower() in ("path", "domain", "expires", "httponly", "secure", "samesite"):
                 cookies.append(
                     {
                         "name": name,

@@ -90,7 +90,8 @@ const Settings = {
     document.getElementById('save-feishu-btn').addEventListener('click', () => this._saveFeishu());
     document.getElementById('feishu-test-btn').addEventListener('click', () => this._testFeishu());
     document.getElementById('save-cookie-btn').addEventListener('click', () => this._saveCookie());
-    document.getElementById('cancel-cookie-btn').addEventListener('click', () => this._clearCookie());
+    document.getElementById('clear-cookie-btn').addEventListener('click', () => this._clearCookie());
+    document.getElementById('test-cookie-btn').addEventListener('click', () => this._testCookie());
   },
 
   // ── Load / save config ─────────────────────────────────────────
@@ -337,6 +338,38 @@ const Settings = {
       }
     } catch (e) {
       App.toast('保存失败：' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  },
+
+  async _testCookie() {
+    const btn = document.getElementById('test-cookie-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '验证中…';
+
+    try {
+      const result = await fetch(this._apiUrl('/api/cookies/validate')).then(r => r.json());
+
+      if (result.valid) {
+        App.toast(result.message, 'success');
+        // Update status dot
+        const dot = document.getElementById('cookie-status-dot');
+        const text = document.getElementById('cookie-status-text');
+        dot.className = 'status-dot success';
+        text.textContent = 'Cookie 有效';
+      } else {
+        App.toast(result.message, 'error');
+        // Update status dot
+        const dot = document.getElementById('cookie-status-dot');
+        const text = document.getElementById('cookie-status-text');
+        dot.className = 'status-dot error';
+        text.textContent = 'Cookie 无效';
+      }
+    } catch (e) {
+      App.toast('验证失败：' + e.message, 'error');
     } finally {
       btn.disabled = false;
       btn.textContent = originalText;
