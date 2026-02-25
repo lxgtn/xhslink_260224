@@ -3,8 +3,6 @@
  */
 
 const Settings = {
-  _cookiePoller: null,
-  _cookieTimeout: null,
   _formKeys: ['ai-provider', 'ai-model', 'ai-base-url', 'ai-api-key',
               'sheets-id', 'feishu-app-id', 'feishu-app-secret',
               'cookie-input'],
@@ -91,11 +89,8 @@ const Settings = {
     document.getElementById('save-ai-btn').addEventListener('click', () => this._saveAI());
     document.getElementById('save-feishu-btn').addEventListener('click', () => this._saveFeishu());
     document.getElementById('feishu-test-btn').addEventListener('click', () => this._testFeishu());
-    document.getElementById('capture-cookie-btn').addEventListener('click', () => this._captureCookie());
-    document.getElementById('cancel-cookie-btn').addEventListener('click', () => this._cancelCapture());
-    document.getElementById('import-cookie-btn').addEventListener('click', () => this._showCookieImport());
-    document.getElementById('cancel-import-btn').addEventListener('click', () => this._hideCookieImport());
-    document.getElementById('save-cookie-btn').addEventListener('click', () => this._saveImportedCookie());
+    document.getElementById('save-cookie-btn').addEventListener('click', () => this._saveCookie());
+    document.getElementById('cancel-cookie-btn').addEventListener('click', () => this._clearCookie());
   },
 
   // ── Load / save config ─────────────────────────────────────────
@@ -303,132 +298,26 @@ const Settings = {
     }
   },
 
-  async _captureCookie() {
-    const captureBtn = document.getElementById('capture-cookie-btn');
-    const cancelBtn  = document.getElementById('cancel-cookie-btn');
-    captureBtn.disabled  = true;
-    captureBtn.textContent = '获取中…';
-    cancelBtn.style.display = 'inline-flex';
+  // ── Cookie (manual paste) ─────────────────────────────────
 
-    // Update status to "capturing"
-    document.getElementById('cookie-status-dot').className = 'status-dot running';
-    document.getElementById('cookie-status-text').textContent = '正在打开浏览器…';
-
-    try {
-      await fetch(this._apiUrl('/api/cookies/capture'), { method: 'POST' });
-      App.toast('已打开小红书网页，请在弹出的窗口中完成登录', 'info', 6000);
-    } catch (e) {
-      App.toast('启动失败：' + e.message, 'error');
-      this._resetCaptureBtn();
-      return;
-    }
-
-    // Poll cookie status
-    this._cookiePoller = setInterval(async () => {
-      try {
-        const status = await fetch(this._apiUrl('/api/cookies/status')).then(r => r.json());
-        this._renderCookieStatus(status);
-        if (status.status === 'captured') {
-          this._stopCookiePoller();
-          this._resetCaptureBtn();
-          App.toast('Cookie 获取成功！', 'success');
-        }
-      } catch (_) {}
-    }, 2000);
-
-    // Timeout after 6 minutes
-    this._cookieTimeout = setTimeout(() => {
-      this._stopCookiePoller();
-      this._resetCaptureBtn();
-      App.toast('Cookie 获取超时，请重试', 'warn');
-    }, 360_000);
-  },
-
-  async _cancelCapture() {
-    this._stopCookiePoller();
-    this._resetCaptureBtn();
-    try {
-      await fetch(this._apiUrl('/api/cookies/cancel'), { method: 'POST' });
-    } catch (_) {}
-    await this._checkCookieStatus();
-  },
-
-  // ── Import Cookie (manual paste) ─────────────────────────────────
-
-  _showCookieImport() {
-    const importArea = document.getElementById('cookie-import-area');
-    const pasteGuide = document.getElementById('cookie-paste-guide');
-    const btnContainer = document.getElementById('cookie-btn-container');
-    const importBtn = document.getElementById('import-cookie-btn');
-
-    // Hide the paste guide and original paste button
-    pasteGuide.style.display = 'none';
-    importBtn.style.display = 'none';
-
-    // Create save and cancel buttons if not exist
-    let saveBtn = document.getElementById('save-cookie-btn-inline');
-    let cancelBtn = document.getElementById('cancel-import-btn-inline');
-
-    if (!saveBtn) {
-      saveBtn = document.createElement('button');
-      saveBtn.id = 'save-cookie-btn-inline';
-      saveBtn.className = 'btn btn-primary';
-      saveBtn.textContent = '保存 Cookie';
-      saveBtn.addEventListener('click', () => this._saveImportedCookie());
-    }
-
-    if (!cancelBtn) {
-      cancelBtn = document.createElement('button');
-      cancelBtn.id = 'cancel-import-btn-inline';
-      cancelBtn.className = 'btn btn-secondary';
-      cancelBtn.textContent = '取消';
-      cancelBtn.addEventListener('click', () => this._hideCookieImport());
-    }
-
-    // Add buttons to container
-    btnContainer.appendChild(saveBtn);
-    btnContainer.appendChild(cancelBtn);
-
-    // Show input area
-    importArea.style.display = 'block';
-    document.getElementById('cookie-input').focus();
-  },
-
-  _hideCookieImport() {
-    const importArea = document.getElementById('cookie-import-area');
-    const pasteGuide = document.getElementById('cookie-paste-guide');
-    const importBtn = document.getElementById('import-cookie-btn');
-    const saveBtn = document.getElementById('save-cookie-btn-inline');
-    const cancelBtn = document.getElementById('cancel-import-btn-inline');
-
-    // Hide input area
-    importArea.style.display = 'none';
-
-    // Remove inline buttons
-    if (saveBtn) saveBtn.remove();
-    if (cancelBtn) cancelBtn.remove();
-
-    // Show original paste button and guide
-    importBtn.style.display = 'inline-flex';
-    pasteGuide.style.display = 'block';
-
-    // Clear input
-    document.getElementById('cookie-input').value = '';
+  _clearCookie() {
+    const input = document.getElementById('cookie-input');
+    input.value = '';
     sessionStorage.removeItem('form_cookie-input');
+    input.focus();
   },
 
-  async _saveImportedCookie() {
+  async _saveCookie() {
     const cookieString = document.getElementById('cookie-input').value.trim();
     if (!cookieString) {
       App.toast('请输入 Cookie 内容', 'error');
       return;
     }
 
-    const btn = document.getElementById('save-cookie-btn-inline');
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '保存中…';
-    }
+    const btn = document.getElementById('save-cookie-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '保存中…';
 
     try {
       const res = await fetch(this._apiUrl('/api/cookies/import'), {
@@ -439,10 +328,9 @@ const Settings = {
       const result = await res.json();
 
       if (result.status === 'error') {
-        App.toast(result.message || '导入失败', 'error');
+        App.toast(result.message || '保存失败', 'error');
       } else {
         App.toast(result.message, 'success');
-        this._hideCookieImport();
         this._renderCookieStatus(result);
         // Clear saved cookie input from sessionStorage after successful save
         sessionStorage.removeItem('form_cookie-input');
@@ -450,23 +338,8 @@ const Settings = {
     } catch (e) {
       App.toast('保存失败：' + e.message, 'error');
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '保存 Cookie';
-      }
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-  },
-
-  _stopCookiePoller() {
-    if (this._cookiePoller)  { clearInterval(this._cookiePoller);  this._cookiePoller  = null; }
-    if (this._cookieTimeout) { clearTimeout(this._cookieTimeout);   this._cookieTimeout = null; }
-  },
-
-  _resetCaptureBtn() {
-    const captureBtn = document.getElementById('capture-cookie-btn');
-    const cancelBtn  = document.getElementById('cancel-cookie-btn');
-    captureBtn.disabled   = false;
-    captureBtn.textContent = '获取 Cookie';
-    cancelBtn.style.display = 'none';
   },
 };
