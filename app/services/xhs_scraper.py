@@ -371,6 +371,172 @@ def _parse_initial_state(state: dict) -> dict:
         return {}
 
 
+def _validate_scraped_data(data: dict) -> bool:
+    """
+    Validate scraped data to detect if primary extraction failed.
+    Returns True if data is valid (not all zeros), False otherwise.
+    """
+    if not data:
+        return False
+    critical_fields = ["title", "author", "text_original"]
+    return not all(data.get(field) == "0" for field in critical_fields)
+
+
+def _extract_from_regex(html: str) -> dict:
+    """
+    Fallback extraction using regex patterns from HTML.
+    Based on proven Coze project patterns.
+    """
+    result = {
+        "title": "0",
+        "author": "0",
+        "date": "0",
+        "stars": "0",
+        "text_original": "0",
+        "pic_url_list": [],
+        "video_url_list": [],
+    }
+
+    try:
+        # Title extraction - try detail-title div first
+        title_match = re.search(r'<div[^>]*id=["\']detail-title["\'][^>]*>(.*?)</div>', html, re.DOTALL)
+        if title_match:
+            title = re.sub(r'<[^>]+>', '', title_match.group(1)).strip()
+            # Filter out invalid titles containing备案信息
+            if title and "小红书_沪ICP备" not in title:
+                result["title"] = title
+
+        # Fallback to page title
+        if result["title"] == "0":
+            page_title_match = re.search(r'<title>(.*?)</title>', html)
+            if page_title_match:
+                page_title = page_title_match.group(1).strip()
+                result["title"] = page_title.replace(" - 小红书", "").strip()
+
+        # Author extraction - try username class
+        author_match = re.search(r'class=["\']username["\'][^>]*>([^<]+)</', html)
+        if author_match:
+            author = author_match.group(1).strip()
+            # Fix mojibake if present
+            if any(0x80 <= ord(c) < 0xFF for c in author):
+                try:
+                    author = author.encode('latin-1').decode('utf-8', errors='ignore')
+                except Exception:
+                    pass
+            result["author"] = author
+
+        # Fallback to nickname in JSON
+        if result["author"] == "0":
+            nickname_match = re.search(r'"nickname":\s*"([^"]+)"', html)
+            if nickname_match:
+                try:
+                    author = nickname_match.group(1).encode().decode('unicode-escape')
+                    result["author"] = author
+                except Exception:
+                    result["author"] = nickname_match.group(1)
+
+        # Date extraction - milliseconds timestamp
+        time_match = re.search(r'"time":\s*(\d{13})', html)
+        if time_match:
+            try:
+                ts = int(time_match.group(1))
+                # Validate range (2020-2030)
+                if 1577836800000 <= ts <= 1893456000000:
+                    result["date"] = _fmt_ts(ts)
+            except (ValueError, AttributeError):
+                pass
+
+        # Stars/collect count extraction
+        stars_patterns = [
+            r'"collectedCount":\s*(\d+)',
+            r'"collectCount":\s*(\d+)',
+            r'"collect_count":\s*(\d+)',
+        ]
+        for pattern in stars_patterns:
+            stars_match = re.search(pattern, html)
+            if stars_match:
+                try:
+                    stars = int(stars_match.group(1))
+                    if 0 <= stars <= 10000000:
+                        result["stars"] = str(stars)
+                        break
+                except (ValueError, AttributeError):
+                    pass
+
+        # Text content extraction
+        desc_match = re.search(r'<div[^>]*id=["\']detail-desc["\'][^>]*>(.*?)</div>', html, re.DOTALL)
+        if desc_match:
+            desc = re.sub(r'<[^>]+>', '', desc_match.group(1)).strip()
+            # Fix mojibake if present
+            if any(0x80 <= ord(c) < 0xFF for c in desc):
+                try:
+                    desc = desc.encode('latin-1').decode('utf-8', errors='ignore')
+                except Exception:
+                    pass
+            result["text_original"] = desc
+
+        # Image URL extraction
+        # Method 1: urlDefault field
+        url_default_matches = re.findall(r'"urlDefault":\s*"([^"]+)"', html)
+        pic_urls = []
+        for url in url_default_matches:
+            url_decoded = url.replace('\\u002F', '/')
+            if url_decoded.startswith('http') and any(
+                ext in url_decoded.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '_jpg_', '_png_']
+            ):
+                if url_decoded not in pic_urls:
+                    pic_urls.append(url_decoded)
+
+        # Method 2: sns-webpic domain URLs
+        if not pic_urls:
+            sns_pic_urls = re.findall(
+                r'(https?://sns-webpic[-\w.]*\.xiaohongshu\.com/[^\s"\'<>]+)', html
+            )
+            for url in sns_pic_urls:
+                url_clean = url.replace('\\u002F', '/')
+                if any(ext in url_clean.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']):
+                    if url_clean not in pic_urls:
+                        pic_urls.append(url_clean)
+
+        result["pic_url_list"] = pic_urls[:20]  # Limit to 20 images
+
+        # Video URL extraction
+        video_urls = []
+        # Method 1: Extract from h264 array
+        h264_match = re.search(r'"h264"\s*:\s*\[([^\]]{0,3000})\]', html, re.DOTALL)
+        if h264_match:
+            h264_str = h264_match.group(1)
+            master_url_matches = re.findall(r'"masterUrl":\s*"([^"]+)"', h264_str)
+            for url in master_url_matches:
+                url_decoded = url.replace('\\u002F', '/').replace('\\/', '/')
+                if url_decoded.startswith('http'):
+                    video_urls.append(url_decoded)
+
+        # Method 2: General video URL patterns
+        if not video_urls:
+            video_patterns = [
+                r'"masterUrl":\s*"([^"]+)"',
+                r'"master_url":\s*"([^"]+)"',
+                r'"url":\s*"([^"]+\.mp4[^"]*)"',
+            ]
+            for pattern in video_patterns:
+                matches = re.findall(pattern, html)
+                for url in matches:
+                    url_decoded = url.replace('\\u002F', '/').replace('\\/', '/')
+                    if url_decoded.startswith('http') and '.mp4' in url_decoded:
+                        if url_decoded not in video_urls:
+                            video_urls.append(url_decoded)
+                if video_urls:
+                    break
+
+        result["video_url_list"] = video_urls[:5]  # Limit to 5 videos
+
+    except Exception as e:
+        print(f"[Regex Extraction] Error during regex extraction: {e}")
+
+    return result
+
+
 # ── Main scrape function ───────────────────────────────────────────────────────
 
 async def scrape_note(url: str) -> dict:
@@ -455,9 +621,19 @@ async def scrape_note(url: str) -> dict:
             except Exception:
                 pass
 
+        # Fallback 3: Regex extraction from HTML (final fallback)
+        if not _validate_scraped_data(note_data):
+            try:
+                html = await page.content()
+                note_data = _extract_from_regex(html)
+                if _validate_scraped_data(note_data):
+                    print("[Scraper] Used regex fallback extraction successfully")
+            except Exception as e:
+                print(f"[Scraper] Regex fallback failed: {e}")
+
         await browser.close()
 
-    if not note_data or (note_data.get("title") == "0" and not note_data.get("text_original")):
+    if not _validate_scraped_data(note_data):
         raise RuntimeError("无法解析笔记内容，Cookie 可能已过期或链接无效")
 
     return note_data
