@@ -5,18 +5,92 @@
 const Settings = {
   _cookiePoller: null,
   _cookieTimeout: null,
+  _formKeys: ['ai-provider', 'ai-model', 'ai-base-url', 'ai-api-key',
+              'sheets-id', 'feishu-app-id', 'feishu-app-secret',
+              'cookie-input'],
 
   async init() {
+    this._restoreFormFromSession(); // Restore form data before loading config
     await this._loadConfig();
     await this._checkFeishuStatus();
     await this._checkCookieStatus();
     this._bindEvents();
+    this._setupFormPersistence();
+    this._updateFeishuSheetLink(); // Update sheet link on init
   },
 
   async refresh() {
-    await this._loadConfig();
+    // Don't reload config if form has been modified (preserve user input)
+    const hasSessionData = this._formKeys.some(key => sessionStorage.getItem('form_' + key));
+    if (!hasSessionData) {
+      await this._loadConfig();
+    }
     await this._checkFeishuStatus();
     await this._checkCookieStatus();
+    this._updateFeishuSheetLink();
+  },
+
+  // ── Form persistence using sessionStorage ─────────────────────────
+
+  _setupFormPersistence() {
+    // Save form data on input change
+    this._formKeys.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          sessionStorage.setItem('form_' + id, el.value);
+        });
+      }
+    });
+  },
+
+  _restoreFormFromSession() {
+    this._formKeys.forEach(id => {
+      const el = document.getElementById(id);
+      const saved = sessionStorage.getItem('form_' + id);
+      if (el && saved) {
+        el.value = saved;
+      }
+    });
+  },
+
+  _clearFormSession() {
+    this._formKeys.forEach(key => {
+      sessionStorage.removeItem('form_' + key);
+    });
+  },
+
+  _getSheetsBaseUrl() {
+    // Extract base URL from sheets ID format
+    // Feishu sheets URL: https://www.feishu.cn/base/<base_token>?table=<table_id>
+    const sheetsId = document.getElementById('sheets-id').value.trim();
+    if (!sheetsId) return null;
+    // Try to construct the base URL
+    // If sheetsId contains the full URL, extract the base part
+    if (sheetsId.startsWith('http')) {
+      try {
+        const url = new URL(sheetsId);
+        return url.origin + url.pathname + url.search;
+      } catch (_) {
+        return null;
+      }
+    }
+    // If it's just the ID, construct the URL
+    return `https://www.feishu.cn/base/${sheetsId}`;
+  },
+
+  _updateFeishuSheetLink() {
+    const linkContainer = document.getElementById('feishu-sheet-link');
+    if (!linkContainer) return;
+
+    const sheetsId = document.getElementById('sheets-id').value.trim();
+    if (sheetsId) {
+      const baseUrl = sheetsId.startsWith('http') ? sheetsId : `https://www.feishu.cn/base/${sheetsId}`;
+      linkContainer.innerHTML = `<a href="${baseUrl}" target="_blank" class="sheet-link">打开多维表格 <span class="arrow-icon">→</span></a>`;
+      linkContainer.style.display = 'inline-block';
+    } else {
+      linkContainer.style.display = 'none';
+    }
   },
 
   _bindEvents() {
@@ -70,6 +144,9 @@ const Settings = {
       } else {
         secretHint.style.display = 'none';
       }
+
+      // Update sheet link after loading config
+      this._updateFeishuSheetLink();
     } catch (_) {}
   },
 
@@ -90,6 +167,12 @@ const Settings = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
+    // Clear saved form data for AI fields after successful save
+    ['ai-provider', 'ai-model', 'ai-base-url', 'ai-api-key'].forEach(key => {
+      sessionStorage.removeItem('form_' + key);
+    });
+
     App.toast('AI 配置已保存', 'success');
     await this._loadConfig();  // refresh masked key display
   },
@@ -109,6 +192,15 @@ const Settings = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
+    // Clear saved form data for Feishu fields after successful save
+    ['sheets-id', 'feishu-app-id', 'feishu-app-secret'].forEach(key => {
+      sessionStorage.removeItem('form_' + key);
+    });
+
+    // Update the sheet link display
+    this._updateFeishuSheetLink();
+
     App.toast('飞书配置已保存', 'success');
     await this._loadConfig();
     await this._checkFeishuStatus();
@@ -264,6 +356,7 @@ const Settings = {
     document.getElementById('cookie-import-area').style.display = 'none';
     document.getElementById('import-cookie-btn').style.display = 'inline-flex';
     document.getElementById('cookie-input').value = '';
+    sessionStorage.removeItem('form_cookie-input');
   },
 
   async _saveImportedCookie() {
@@ -291,6 +384,8 @@ const Settings = {
         App.toast(result.message, 'success');
         this._hideCookieImport();
         this._renderCookieStatus(result);
+        // Clear saved cookie input from sessionStorage after successful save
+        sessionStorage.removeItem('form_cookie-input');
       }
     } catch (e) {
       App.toast('保存失败：' + e.message, 'error');
